@@ -9,24 +9,38 @@
 
     <body>
         <div id="app_window">
-            <div class="Flex_Vertical">
+            <div class="Container" id="container_openpose">
                 <div class="Flex_Horizontal" id="fh1">
                     <div class="Horizontal_First" id="input_img_section">
-
+                        <img id="reference" src="input/00434-566703261.png">
                     </div>
                     <div class="Horizontal_Second" id="landmarks_selection_section">
-                        
+
                     </div>
                 </div>
                 <div class="Flex_Horizontal" id="fh2">
-                    <div class="Horizontal_First" id="imgs_left_section">
-
+                    <div class="Horizontal_First" id="img_counter_section">
+                        <p class="Arial25">This is image i out of n.</p>
                     </div>
                     <div class="Horizontal_Second" id="cont_button_section">
-                        
+                        <div class="Control_Button" id="previous_button">
+                            <p class="Arial25">Previous</p>
+                        </div>
+                        <div class="Control_Button" id="send_all_button">
+                            <p class="Arial25">Send All</p>
+                        </div>
+                        <div class="Control_Button" id="next_button">
+                            <p class="Arial25">Next</p>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Let JS display one or the other.
+            <div class="Container" id="container_transition">
+                <p class="Arial25">Waiting...</p>
+            </div>
+            -->
         </div>
     </body>
 </html>
