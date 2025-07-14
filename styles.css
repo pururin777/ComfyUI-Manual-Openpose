@@ -1,0 +1,67 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+div#app_window {
+    height: 95%;
+    width: 80%;
+    position: fixed;
+    left: 10%;
+    top: 2.5%;
+    border-radius: 5px;
+    background-color: #575555;
+}
+
+div.Flex_Vertical {
+    height: 94%;
+    width: 95%;
+    position: relative;
+    left: 2.5%;
+    top: 3%;
+    background-color: aliceblue;
+
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+div.Flex_Horizontal {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+div.Horizontal_First {
+    width: 60%;
+}
+
+div.Horizontal_Second {
+    width: 40%;
+}
+
+div#fh1 {
+    height: 90%;
+}
+
+div#fh2 {
+    height: 10%;
+}
+
+div#input_img_selection {
+    background-color: green;
+}
+
+div#landmarks_selection_section {
+    background-color: orange;
+}
+
+div#imgs_left_section {
+    background-color: red;
+}
+
+div#cont_button_section {
+    background-color: blue;
+}
