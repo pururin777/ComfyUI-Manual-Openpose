@@ -1,3 +1,4 @@
+.gitignore
 venv
 .vscode
 __pycache__
