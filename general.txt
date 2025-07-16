@@ -1,0 +1,19 @@
+1) List all images received via node input
+2) Pair them with empty openpose data and render order
+3) Send the first one in the list to the frontend (convert openpose data to json)
+4) Frontend does something with them (adding keypoint, determining order of relations, adding a figure)
+5) Receive such data and store json data
+6) If "Send All" signal is made convert json data to openponse image
+7) Output reference images and openpose images
+
+>Notes
+- There shouldn't be a function that draws all vertices and edges by looping through them but instead
+  a function to render a given edge and a function to render a given vertex. Then there will be a data
+  structure that harbors the order of edges and circles that can be re-arranged. The function will be
+  iteratively applied to it. There should be a default order however that is most common (front view, person 1 < person 2).
+ 
+- Frontend will get openpose data for 3 people, but will only see the data for more than 1 if it set it to more than 1 person.
+ 
+- Removing a person removes the data about them as well.
+ 
+- You can't remove the first person.
