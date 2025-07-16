@@ -12,8 +12,6 @@ VERTEX_RADIUS = 4
 VERTEX_THICKNESS = -1
 MIN_CONFIDENCE = 0.05
 
-CURRENT_INDEX = 0
-
 # Function that is not a placeholder. Images must be retrieved from input_batch to imitate receiving images as input.
 def retrieveImages():
     image_list = []
@@ -53,24 +51,24 @@ def renderKeypoint(op_img, landmark):
     cv2.circle(op_img, (x, y), VERTEX_RADIUS, KEYPOINT_COLORS[landmark], VERTEX_THICKNESS)
 
 # A function that will be directly used in the node. Removes all graphical elements from the render order that shouldn't be rendered.
-def cleanUpRenderList(width, height, truples):
+def cleanUpRenderList(width, height, truple):
     # Go through all the figures that exist.
-    for i in range(0, len(truples[1])):
+    for i in range(0, len(truple[1])):
         # For figure i, go through each keypoint.
-        for key in truples[1][i]:
+        for key in truple[1][i]:
             # If the keypount is outside of the image or has too low confidence then remove it from the render order.
             if key[0] >= width or key[1] >= height or key[2] < MIN_CONFIDENCE:
                 # Go through render order and remove every entry of the figure in question with the useless keypoint.
-                for entry in truples[2]:
+                for entry in truple[2]:
                     if entry[0] == i and key in entry[1]:
-                        truples[2].remove(entry)
+                        truple[2].remove(entry)
     
-    return truples[2]
+    return truple[2]
 
 # A function that will be directly used in the node. Goes through the render order and renders all figures based on openpose_data.
-def renderOpenposeImage(width, height, truples):
+def renderOpenposeImage(width, height, truple):
     op_img = np.zeros((width, height, 3), dtype=np.uint8)
-    render_order = truples[2]
+    render_order = truple[2]
     
     for entry in render_order:
         if "-" in entry:
@@ -101,17 +99,33 @@ def updateTruples(index, truples, figures, render_order):
 # reference images and a batch of openpose images as the node's output.
 def manualOpenposeMain():
     # Node is reached. You will receive the node input. Imitating.
-    ref_imgs = retrieveImages()
+    ref_images = retrieveImages()
 
     # Prepare the lists that you will need.
-    CURRENT_INDEX = 0
+    current_index = 0
     truples = []
+    op_images = []
     total_imgs = len(truples)
 
-    pairWithOpenposeAndRenderData(truples, ref_imgs)
-    sendToFrontend(truples[CURRENT_INDEX], CURRENT_INDEX, total_imgs)
-    # Small issue with old and new index at this point.
-    figures, render_order = receiveFromFrontend()
-    truples = updateTruples(CURRENT_INDEX, truples, figures, render_order)
+    pairWithOpenposeAndRenderData(truples, ref_images)
 
-    cv2.imwrite('node_output/openpose_rendered.png', canvas)
+    # This should be a loop
+    sendToFrontend(truples[current_index], current_index, total_imgs)
+
+    figures, render_order, new_index = receiveFromFrontend()
+    truples = updateTruples(current_index, truples, figures, render_order)
+    current_index = new_index
+    #
+
+    # When "Send All" is received the code that updates truples must be run a last time.
+    sendAllMessage()
+
+    for i in len(truples):
+        img_width = truples[i][0]#.function that calls width
+        img_height = truples[i][0]#.function that calls width
+        truples[2] = cleanUpRenderList(img_width, img_height, truples[i])
+        op_images.append(renderOpenposeImage(img_width, img_height, truples[i]))
+
+    return (ref_images, op_images)
+
+    # cv2.imwrite('node_output/openpose_rendered.png', canvas)
