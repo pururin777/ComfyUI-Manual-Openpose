@@ -12,6 +12,8 @@ VERTEX_RADIUS = 4
 VERTEX_THICKNESS = -1
 MIN_CONFIDENCE = 0.05
 
+CURRENT_INDEX = 0
+
 # Function that is not a placeholder. Images must be retrieved from input_batch to imitate receiving images as input.
 def retrieveImages():
     image_list = []
@@ -40,10 +42,10 @@ def pairWithOpenposeAndRenderData(truples, ref_imgs):
     return truples
 
 # A function that will be directly used in the node. Renders a relation. Checks if both vertices have been rendered.
-def renderRelation(op_image, relation):
+def renderRelation(op_img, relation):
     x1, y1 = OPENPOSE_KEYPOINTS[OPENPOSE_RELATIONS[relation][0]][0], OPENPOSE_KEYPOINTS[OPENPOSE_RELATIONS[relation][0]][1]
     x2, y2 = OPENPOSE_KEYPOINTS[OPENPOSE_RELATIONS[relation][1]][0], OPENPOSE_KEYPOINTS[OPENPOSE_RELATIONS[relation][1]][1]
-    cv2.line(op_image, (x1, y1), (x2, y2), RELATION_COLORS[relation], EDGE_THICKNESS)
+    cv2.line(op_img, (x1, y1), (x2, y2), RELATION_COLORS[relation], EDGE_THICKNESS)
 
 # A function that will be directly used in the node. Renders a vertex. Dosn't render when c < 0.05 and if out of bounds.
 def renderKeypoint(op_img, landmark):
@@ -79,21 +81,37 @@ def renderOpenposeImage(width, height, truples):
     return op_img
 
 # A placeholder function that imitates sending over to the frontend.
-def sendToFrontend():
+def sendToFrontend(truple, index, total_imgs):
     pass
 
 # A placeholder function that imitates receiving the edited truple from frontend.
 def receiveFromFrontend():
     pass
 
+# A placeholder function that imitates getting the "Send All" request.
+def sendAllMessage():
+    pass
+
+# A function that will be directly used in the node. Updates truples.
+def updateTruples(index, truples, figures, render_order):
+    truples[index][1], truples[index][2] = figures, render_order
+    return truples
+
 # A function that will be directly used in the node. The main function of the node that coordinates the other functions and will return a batch of
 # reference images and a batch of openpose images as the node's output.
-def manual_openpose_main():
+def manualOpenposeMain():
     # Node is reached. You will receive the node input. Imitating.
     ref_imgs = retrieveImages()
 
     # Prepare the lists that you will need.
+    CURRENT_INDEX = 0
     truples = []
-    op_imgs = []
+    total_imgs = len(truples)
+
+    pairWithOpenposeAndRenderData(truples, ref_imgs)
+    sendToFrontend(truples[CURRENT_INDEX], CURRENT_INDEX, total_imgs)
+    # Small issue with old and new index at this point.
+    figures, render_order = receiveFromFrontend()
+    truples = updateTruples(CURRENT_INDEX, truples, figures, render_order)
 
     cv2.imwrite('node_output/openpose_rendered.png', canvas)
