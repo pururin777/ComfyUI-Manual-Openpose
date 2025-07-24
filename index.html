@@ -9,16 +9,37 @@
 
     <body>
         <div id="app_window">
-            <div class="Container" id="container_openpose">
-                <div class="Flex_Horizontal" id="fh1">
+            <div id="container_openpose">
+                <div class="Flex_Horizontal" id="flex_horizontal_1">
                     <div class="Horizontal_First" id="input_img_section">
-                        <img id="reference" src="input/00434-566703261.png">
+                        <img id="img_reference" src="input/00434-566703261.png">
                     </div>
-                    <div class="Horizontal_Second" id="landmarks_selection_section">
-
+                    <div class="Horizontal_Second" id="settings_section">
+                        <div id="settings_buttons">
+                            <div class="Control_Button" id="landmarks_button">
+                                <p class="Arial25">Landmarks Settings</p>
+                            </div>
+                            <div class="Control_Button" id="render_order_button">
+                                <p class="Arial25">Render Order Settings</p>
+                            </div>
+                        </div>
+                        <div class="Openpose_Settings" id="">
+                            <div class="Landmarks_Entry" id="landmark_entry_1">
+                                <p id="figure_number_1">Figure 1</p>
+                                <p id="landmark_1">Head</p>
+                                <p id="vector_1">(0,0,0)</p>
+                            </div>
+                            <!--
+                            <div class="Render_Order_Entry" id="render_order_entry_1">
+                                <p id="order_1">1</p>
+                                <p id="figure_number_1">Figure 1</p>
+                                <p id="element_1">Head</p>
+                            </div>
+                            -->
+                        </div>
                     </div>
                 </div>
-                <div class="Flex_Horizontal" id="fh2">
+                <div class="Flex_Horizontal" id="flex_horizontal_2">
                     <div class="Horizontal_First" id="img_counter_section">
                         <p class="Arial25">This is image i out of n.</p>
                     </div>
