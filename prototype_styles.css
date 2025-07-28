@@ -47,9 +47,14 @@ div#flex_horizontal_2 {
 /* object-fit will not be in relation to the size of the parent but of this element in question, which is <img>.
    For that reason height and width must be brought to the scale of the parent, if that were dimension you were looking for. */
 img#img_reference {
-    height: 100%;
-    width: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    height: auto;
+    width: auto;
     object-fit: contain;
+    display: block;
+    margin: auto;
+    cursor: pointer;
 }
 
 div#settings_section {
@@ -70,7 +75,6 @@ div#settings_buttons {
 
 div.Openpose_Settings {
     height: 90%;
-
     border-radius: 4px;
     border: 1px solid #acacac;
     background-color: #3d3c3c;
@@ -93,12 +97,42 @@ div.Landmarks_Entry, div.Render_Order_Entry {
     overflow: hidden;
 }
 
-div.Openpose_Settings p {
-    margin: 5px 15px 5px 10px;
+div.Landmarks_Entry:hover {
+    width: 99%;
+    border: 1px solid #f19224;
+    margin: 5px 0px 0px 0px;
+    cursor: pointer;
 
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+div.Render_Order_Entry:hover {
+    width: 99%;
+    border: 1px solid #f19224;
+    margin: 5px 0px 0px 0px;
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+div.Landmarks_Entry > p {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 20px;
     color: white;
+    margin: 5px 15px 5px 10px;
+}
+
+div.Render_Order_Entry > p {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+    color: white;
+    margin: 5px 15px 5px 10px;
 }
 
 div#img_counter_section {
@@ -124,6 +158,7 @@ div.Control_Button {
 div.Control_Button:hover {
     border: 3px solid #f19224;
     background-color: #6e615b;
+    cursor: pointer;
 }
 
 div#container_transition {
@@ -133,17 +168,8 @@ div#container_transition {
 }
 
 p.Arial25 {
-    margin: 0;
-
     font-family: Arial, Helvetica, sans-serif;
     font-size: 25px;
     color: white;
-}
-
-div.Control_Button p.Arial25:active {
     margin: 0;
-
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 25px;
-    color: #f19224;
 }

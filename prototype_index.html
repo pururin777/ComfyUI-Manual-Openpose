@@ -4,7 +4,8 @@
     <head>
         <title>Manual Openpose Node</title>
         <meta charset="UTF-8">
-        <link rel="stylesheet" href="styles.css">
+        <link rel="stylesheet" href="prototype_styles.css">
+        <script src="js/prototype_script.js"></script>
     </head>
 
     <body>
@@ -12,24 +13,32 @@
             <div id="container_openpose">
                 <div class="Flex_Horizontal" id="flex_horizontal_1">
                     <div class="Horizontal_First" id="input_img_section">
-                        <img id="img_reference" src="input/00434-566703261.png">
+                        <img id="img_reference" src="image_batch/00434-566703261.png">
                     </div>
                     <div class="Horizontal_Second" id="settings_section">
                         <div id="settings_buttons">
                             <div class="Control_Button" id="landmarks_button">
-                                <p class="Arial25">Landmarks Settings</p>
+                                <p class="Arial25" id="landmarks_button_text">Landmarks Settings</p>
                             </div>
                             <div class="Control_Button" id="render_order_button">
-                                <p class="Arial25">Render Order Settings</p>
+                                <p class="Arial25" id="render_order_button_text">Render Order Settings</p>
                             </div>
                         </div>
-                        <div class="Openpose_Settings" id="">
-                            <div class="Landmarks_Entry" id="landmark_entry_1">
+                        <div class="Openpose_Settings" id="landmarks_list">
+                            <script>
+                                retrieveJSON().then(data => {
+                                    listFigureLandmarks(data);
+                                })
+                                .catch(error => {
+                                    console.error('Error loading JSON:', error);
+                                });
+                            </script>
+                            <!--
+                            <div class="Landmarks_Entry" id="landmark_entry_1" onmouseover="lightUpChildren(this)" onmouseleave="dimChildren(this)">
                                 <p id="figure_number_1">Figure 1</p>
                                 <p id="landmark_1">Head</p>
                                 <p id="vector_1">(0,0,0)</p>
                             </div>
-                            <!--
                             <div class="Render_Order_Entry" id="render_order_entry_1">
                                 <p id="order_1">1</p>
                                 <p id="figure_number_1">Figure 1</p>
