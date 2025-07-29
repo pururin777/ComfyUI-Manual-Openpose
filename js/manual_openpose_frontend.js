@@ -1,17 +1,32 @@
 import { openepose_keypoints, openepose_relations, render_order, keypoint_colors, relation_colors } from "templates.js";
 
 // Establish global variables for access.
-const truple = {};
+const pair = {};
 let index = null;
 let total = null;
-
+ 
 // Whenever the frontend is called, reset the values of global variables.
 function initialize() {
-    truple.image = null,
-    truple.figures = [],
-    truple.render_order = null;
+    pair.image = null;
+    pair.figures = [];
     index = 0;
     total = 0;
+}
+
+// Add empty figure data at the end of the array.
+function addFigure() {
+    const emptyFigure = Object.assign({}, openepose_keypoints);
+    pair.figures.push(emptyFigure);
+}
+
+// Either remove the last element or replace the only remaining element with empty figure data.
+function removeFigure() {
+    if (pair.figures.length == 1) {
+        const emptyFigure = Object.assign({}, openepose_keypoints);
+        pair.figures[0] = emptyFigure;
+    } else {
+        pair.figures.pop();
+    }
 }
 
 // Coordinates frontend functions.
