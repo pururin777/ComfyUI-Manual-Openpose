@@ -81,86 +81,57 @@ function drawOpenposeEditor() {
     div03.className = "Horizontal_Second";
     div03.id = "settings_section";
     div01.appendChild(div03);
-
+    
     const div04 = document.createElement("div");
-    div04.id = "settings_buttons";
-    div03.appendChild(div04);
+    div04.className = "Flex_Horizontal";
+    div04.id = "flex_horizontal_2";
+    div00.appendChild(div04);
 
     const div05 = document.createElement("div");
-    div05.className = "Control_Button";
-    div05.id = "landmarks_button";
+    div05.className = "Horizontal_First";
+    div05.id = "img_counter_section";
     div04.appendChild(div05);
-
-    const p00 = document.createElement("p");
-    p00.className = "Arial25";
-    p00.innerText = "Landmarks Settings";
-    div05.appendChild(p00);
-
-    const div06 = document.createElement("div");
-    div06.className = "Control_Button";
-    div06.id = "render_order_button";
-    div04.appendChild(div06);
-
-    const p01 = document.createElement("p");
-    p01.className = "Arial25";
-    p01.innerText = "Render Order Settings";
-    div06.appendChild(p01);
-
-    drawLandmarksList();
-    drawRenderOrderList();
-
-    div03.appendChild(document.getElementById("landmarks_list"));
-    
-    const div07 = document.createElement("div");
-    div07.className = "Flex_Horizontal";
-    div07.id = "flex_horizontal_2";
-    div00.appendChild(div07);
-
-    const div08 = document.createElement("div");
-    div08.className = "Horizontal_First";
-    div08.id = "img_counter_section";
-    div07.appendChild(div08);
 
     const p02 = document.createElement("p");
     p02.className = "Arial25";
     p02.id = "image_counter";
     p02.innerText = `This is image ${index} out of ${total}.`;
-    div08.appendChild(p02);
+    div05.appendChild(p02);
 
-    const div09 = document.createElement("div");
-    div09.className = "Horizontal_Second";
-    div09.id = "cont_button_section";
-    div07.appendChild(div09);
+    const div06 = document.createElement("div");
+    div06.className = "Horizontal_Second";
+    div06.id = "cont_button_section";
+    div04.appendChild(div06);
 
-    const div10 = document.createElement("div");
-    div10.className = "Control_Button";
-    div10.id = "previous_button";
-    div09.appendChild(div10);
+    const div07 = document.createElement("div");
+    div07.className = "Control_Button";
+    div07.id = "previous_button";
+    div06.appendChild(div07);
 
     const p03 = document.createElement("p");
     p03.className = "Arial25";
     p03.innerText = "Previous";
-    div10.appendChild(p03);
+    div07.appendChild(p03);
 
-    const div11 = document.createElement("div");
-    div11.className = "Control_Button";
-    div11.id = "send_all_button";
-    div09.appendChild(div11);
+    const div08 = document.createElement("div");
+    div08.className = "Control_Button";
+    div08.id = "send_all_button";
+    div06.appendChild(div08);
 
     const p04 = document.createElement("p");
     p04.className = "Arial25";
     p04.innerText = "Send All";
-    div11.appendChild(p04);
+    div08.appendChild(p04);
 
-    const div12 = document.createElement("div");
-    div12.className = "Control_Button";
-    div12.id = "next_button";
-    div09.appendChild(div12);
+    const div09 = document.createElement("div");
+    div09.className = "Control_Button";
+    div09.id = "next_button";
+    div06.appendChild(div09);
 
     const p05 = document.createElement("p");
     p05.className = "Arial25";
     p05.innerText = "Next";
-    div12.appendChild(p05);
+    div09.appendChild(p05);
 
     // Class related style modification.
     let nodeList = document.querySelectorAll("div.Container");
@@ -206,21 +177,6 @@ function drawOpenposeEditor() {
         margin: 0;`;
     }
 
-    nodeList = document.querySelectorAll("div.Openpose_Settings");
-    for (let i = 0; i < nodeList.length; i++) {
-        nodeList[i].style =
-        `height: 90%;
-        border-radius: 4px;
-        border: 1px solid #acacac;
-        background-color: #3d3c3c;
-
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-        overflow-y: scroll;
-        align-items: center;`;
-    }
-
     // ID related style modification.
     let node = document.getElementById("container_openpose");
     node.style.display = "flex";
@@ -248,18 +204,14 @@ function drawOpenposeEditor() {
     cursor: pointer;`;
 
     node = document.getElementById("settings_section");
+    node.style.borderRadius = "4px";
+    node.style.border = "1px solid #acacac";
+    node.style.backgroundColor = "#3d3c3c";
     node.style.display = "flex";
     node.style.flexDirection = "column";
     node.style.flexShrink = "0";
-    node.style.overflow = "hidden";
-
-    node = document.getElementById("settings_buttons");
-    node.style =
-    `height: 10%;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;`;
+    node.style.overflowY = "scroll";
+    node.style.alignItems = "center";
 
     node = document.getElementById("flex_hozizontal_2");
     node.style.height = "10%";
@@ -299,20 +251,6 @@ function switchToOpenposeEditor() {
     parent.replaceChild(newChild, oldChild);
 }
 
-function switchToLandmarksList() {
-    parent = document.getElementById("settings_section");
-    newChild = document.getElementById("landmarks_list");
-    oldChild = document.getElementById("render_order_list");
-    parent.replaceChild(newChild, oldChild);
-}
-
-function switchToRenderOrderList() {
-    parent = document.getElementById("settings_section");
-    newChild = document.getElementById("render_order_list");
-    oldChild = document.getElementById("landmarks_list");
-    parent.replaceChild(newChild, oldChild);  
-}
-
 function insertImage() {
     // Function that inserts the given image into the img tag.
 }
@@ -329,16 +267,4 @@ function decrementIndex() {
 
 function setTotal(numberOfImages) {
     total = numberOfImages;
-}
-
-function drawLandmarksList() {
-    const div00 = document.createElement("div");
-    div00.className = "Openpose_Settings";
-    div00.id = "landmarks_list";
-}
-
-function drawRenderOrderList() {
-    const div00 = document.createElement("div");
-    div00.className = "Openpose_Settings";
-    div00.id = "render_order_list";
 }

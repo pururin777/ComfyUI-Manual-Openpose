@@ -133,6 +133,7 @@ class ManualOpenposeNode:
         truples = ManualOpenposeNode.pairWithOpenposeAndRenderData(truples, ref_imgs)
         truples = ManualOpenposeNode.convertAllDictToJSON(truples)
 
+        '''
         # Send total amount of images once.
         total_imgs = len(truples)
         sendToFrontend(total_imgs)
@@ -143,7 +144,7 @@ class ManualOpenposeNode:
         figures, new_index = receiveFromFrontend()
         truples = ManualOpenposeNode.updateTruples(current_index, truples, figures)
         current_index = new_index
-        #
+        '''
 
         # When "Send All" is received the code that updates truples must be run a last time.
 
