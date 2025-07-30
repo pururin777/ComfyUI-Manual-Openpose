@@ -2,6 +2,7 @@ import { openepose_keypoints, openepose_relations, render_order, keypoint_colors
 
 // Establish global variables for access.
 const pair = {};
+const cursor = {};
 let index = null;
 let total = null;
  
@@ -9,6 +10,8 @@ let total = null;
 function initialize() {
     pair.image = null;
     pair.figures = [];
+    cursor.figure = 0;
+    cursor.key = "nose";
     index = 0;
     total = 0;
 }
@@ -17,25 +20,53 @@ function initialize() {
 function addFigure() {
     const emptyFigure = Object.assign({}, openepose_keypoints);
     pair.figures.push(emptyFigure);
+    displayLatestFigureData();
 }
 
 // Either remove the last element or replace the only remaining element with empty figure data.
 function removeFigure() {
+    index = pair.figures.length-1;
+    children = document.querySelectorAll(`[id^="figure_${index}"]`);
+
     if (pair.figures.length == 1) {
         const emptyFigure = Object.assign({}, openepose_keypoints);
         pair.figures[0] = emptyFigure;
+
+        for (child in children) {
+            child.remove();
+        }
+
+        displayFigureData();
+
     } else {
         pair.figures.pop();
+
+        for (child in children) {
+            child.remove();
+        }
     }
+}
+
+function changeLandmarkEntry(vector) {
+
 }
 
 // Coordinates frontend functions.
 function main() {
     initialize();
     drawAppWindow();
-    drawOpenposeEditor();
     drawIntermission();
+    drawOpenposeEditor();
+
+    // Waiting for backend message.
+    setTotal(totalImages);
+    updatePair(img, figures);
+    displayFigureData();
+
 }
+
+// [WIP] A function triggered by an evenListener which receives how many images there are in total and then assigns the value to total.
+// [WIP] A function triggered by an evenListener which receives figure data from backend and updates the pair object.
 
 function drawAppWindow() {
     // Creating and setting elements and other nodes.
@@ -57,11 +88,34 @@ function drawAppWindow() {
     background-color: #575555;`;
 }
 
+function drawIntermission() {
+    const div00 = document.createElement("div");
+    div00.className = "Container";
+    div00.id = "container_transmission";
+    document.getElementById("app_window").appendChild(div00);
+
+    const p00 = document.createElement("p");
+    p00.className = "Arial25";
+    p00.id = "intermission_text";
+    p00.innerText = "Waiting to receive backend data..."
+    div00.appendChild(p00);
+}
+
+function switchToIntermission() {
+    parent = document.getElementById("app_window");
+    newChild = document.getElementById("container_intermission");
+    oldChild = document.getElementById("container_openpose");
+    parent.replaceChild(newChild, oldChild);
+}
+
+function setIntermissionMessage(message) {
+    document.getElementById("intermission_text").innerText = message;
+}
+
 function drawOpenposeEditor() {
     const div00 = document.createElement("div");
     div00.className = "Container";
     div00.id = "container_openpose";
-    document.getElementById("app_window").appendChild(div00);
 
     const div01 = document.createElement("div");
     div01.className = "Flex_Horizontal";
@@ -222,28 +276,6 @@ function drawOpenposeEditor() {
     node.style.alignItems = "center";
 }
 
-function drawIntermission() {
-    const div00 = document.createElement("div");
-    div00.className = "Container";
-    div00.id = "container_transmission";
-
-    const p00 = document.createElement("p");
-    p00.className = "Arial25";
-    p00.id = "intermission_text";
-    div00.appendChild(p00);
-}
-
-function switchToIntermission() {
-    parent = document.getElementById("app_window");
-    newChild = document.getElementById("container_intermission");
-    oldChild = document.getElementById("container_openpose");
-    parent.replaceChild(newChild, oldChild);
-}
-
-function setIntermissionMessage(message) {
-    document.getElementById("intermission_text").innerText = message;
-}
-
 function switchToOpenposeEditor() {
     parent = document.getElementById("app_window");
     newChild = document.getElementById("container_openpose");
@@ -251,8 +283,127 @@ function switchToOpenposeEditor() {
     parent.replaceChild(newChild, oldChild);
 }
 
+function setTotal(numberOfImages) {
+    total = numberOfImages;
+}
+
+// [WIP] Function that changes the content of the pair object to what has been sent to the frontend.
+function updatePair(receivedImg, receivedFigures) {
+    newFigures = [];
+
+    for (let i = 0; i < newFigures.length; i++) {
+        newFigures.push(JSON.parse(receivedFigures[i]));
+    }
+
+    pair.figures = newFigures;
+
+    // [WIP]
+    pair.img = newImg;
+}
+
+function displayFigureData() {
+    parent = document.getElementById("settings_section");
+
+    for (let i = 0; i < pair.figures.length; i++) {
+        figure = pair.figures[i];
+        keys = Object.keys(figure);
+        values = Object.values(figure);
+
+        for (let j = 0; j < keys.length; j++) {
+            const div00 = document.createElement("div");
+            div00.className = "Landmarks_Entry";
+            div00.id = "figure_" + i + "_" + keys[j] + "_entry";
+            parent.appendChild(div00);
+
+            const p00 = document.createElement("p");
+            p00.innerText = "Figure " + i;
+            div00.appendChild(p00);
+
+            const p01 = document.createElement("p");
+            p01.innerText = keys[j];
+            div00.appendChild(p01);
+
+            const p02 = document.createElement("p");
+            p02.id = keys[j] + "_vector";
+            p02.innerText = "(" + values[j].toString() + ")";
+            div00.appendChild(p02);
+        }
+    }
+}
+
+function displayLatestFigureData() {
+    index = pair.figures.length-1;
+    parent = document.getElementById("settings_section");
+
+    figure = pair.figures[index];
+    keys = Object.keys(figure);
+    values = Object.values(figure);
+
+    for (let i = 0; i < keys.length; i++) {
+        const div00 = document.createElement("div");
+        div00.className = "Landmarks_Entry";
+        div00.id = "figure_" + index + "_" + keys[i] + "_entry";
+        parent.appendChild(div00);
+
+        const p00 = document.createElement("p");
+        p00.innerText = "Figure " + index;
+        div00.appendChild(p00);
+
+        const p01 = document.createElement("p");
+        p01.innerText = keys[i];
+        div00.appendChild(p01);
+
+        const p02 = document.createElement("p");
+        p02.id = keys[i] + "_vector";
+        p02.innerText = "(" + values[i].toString() + ")";
+        div00.appendChild(p02);
+    }
+}
+
+function editDisplayedLandmarkEntry(figure_num, landmark, vector) {
+
+}
+
+// Function that inserts the given image into the img tag.
 function insertImage() {
-    // Function that inserts the given image into the img tag.
+
+}
+
+function incrementCursor() {
+    landmarks = Object.keys(openepose_keypoints);
+    
+    if (cursor.key == landmarks[landmarks.length-1]) {
+        return;
+    }
+
+    for (let i = 0; i < landmarks.length-1; i++) {
+        if (cursor.key == landmarks[i]) {
+            cursor.key = landmarks[i+1];
+        }
+    }
+}
+
+function decrementCursor() {
+    landmarks = Object.keys(openepose_keypoints);
+    
+    if (cursor.key == landmarks[0]) {
+        return;
+    }
+
+    for (let i = 1; i < landmarks.length; i++) {
+        if (cursor.key == landmarks[i]) {
+            cursor.key = landmarks[i-1];
+        }
+    }
+}
+
+function setKeyOfCursor(landmark) {
+    cursor.key = landmark;
+}
+
+function resetCursor() {
+    cursor.figure = 0;
+    cursor.key = "nose";
 }
 
 function incrementIndex() {
@@ -263,8 +414,4 @@ function incrementIndex() {
 function decrementIndex() {
     index--;
     document.getElementById("image_counter").innerText = `This is image ${index} out of ${total}.`;
-}
-
-function setTotal(numberOfImages) {
-    total = numberOfImages;
 }
