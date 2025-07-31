@@ -1,12 +1,20 @@
 import { openepose_keypoints, openepose_relations, render_order, keypoint_colors, relation_colors } from "templates.js";
 
-// Establish global variables for access.
+// Global variables.
 const pair = {};
 const cursor = {};
 let index = null;
 let total = null;
+let canv_height = null;
+let canv_width = null;
+
+MIN_CONFIDENCE = 0.05;
+KEYPOINT_RADIUS = 9;
+EDGE_THICKNESS = 7;
  
-// Whenever the frontend is called, reset the values of global variables.
+/**
+ * Whenever the frontend is called at the next generation, reset the values of the global variables.
+ */
 function initialize() {
     pair.image = null;
     pair.figures = [];
@@ -14,16 +22,23 @@ function initialize() {
     cursor.key = "nose";
     index = 0;
     total = 0;
+    canv_height = 1;
+    canv_width = 1;
 }
 
-// Add empty figure data at the end of the array.
+/**
+ * Add empty figure data at the end of the array.
+ */
 function addFigure() {
     const emptyFigure = Object.assign({}, openepose_keypoints);
     pair.figures.push(emptyFigure);
     displayLatestFigureData();
+    renderFigure();
 }
 
-// Either remove the last element or replace the only remaining element with empty figure data.
+/**
+ * Either remove the last element or replace the only remaining element with empty figure data.
+ */
 function removeFigure() {
     index = pair.figures.length-1;
     children = document.querySelectorAll(`[id^="figure_${index}"]`);
@@ -37,6 +52,7 @@ function removeFigure() {
         }
 
         displayFigureData();
+        renderFigure();
 
     } else {
         pair.figures.pop();
@@ -44,23 +60,39 @@ function removeFigure() {
         for (child in children) {
             child.remove();
         }
+
+        renderFigure();
     }
 }
 
-function changeLandmarkEntry(vector) {
-
+/**
+ * Function meant to the change the coordinates and confidence of a landmark for a given figure. Also changes the entry as seen in the GUI.
+ * @param {Number} figure_num - Index of figure.
+ * @param {String} landmark - Name of the landmark.
+ * @param {Array(Number)} vector - Coordinates and confidence value for landmark of referenced figure.
+ */
+function changeLandmarkEntry(figure_num, landmark, vector) {
+    pair.figures[figure_num][landmark] = vector;
+    document.getElementById("figure_" + figure_num + "_" + landmark + "_vector").innerText = "(" + vector.toString() + ")";
+    renderFigure();
+    incrementCursor();
 }
 
-// Coordinates frontend functions.
+/**
+ * Function that coordinates what happens in frontend.
+ */
 function main() {
     initialize();
     drawAppWindow();
     drawIntermission();
     drawOpenposeEditor();
 
+    // [WIP]
     // Waiting for backend message.
     setTotal(totalImages);
     updatePair(img, figures);
+    // Changing to OpenposeEditor after receiving all necessary data.
+    switchToOpenposeEditor();
     displayFigureData();
 
 }
@@ -68,6 +100,9 @@ function main() {
 // [WIP] A function triggered by an evenListener which receives how many images there are in total and then assigns the value to total.
 // [WIP] A function triggered by an evenListener which receives figure data from backend and updates the pair object.
 
+/**
+ * Function that lays out app_window which contains the transmission or openpose editor.
+ */
 function drawAppWindow() {
     // Creating and setting elements and other nodes.
     const div00 = document.createElement("div");
@@ -75,8 +110,8 @@ function drawAppWindow() {
     document.body.appendChild(div00);
 
     // ID related style modification.
-    appWindowHeight = screen.availHeight * 0.8;
-    appWindowWidth = screen.availWidth * 0.8;
+    let appWindowHeight = screen.availHeight * 0.8;
+    let appWindowWidth = screen.availWidth * 0.8;
 
     div00.style =
     `height: ${appWindowHeight}px;
@@ -88,6 +123,9 @@ function drawAppWindow() {
     background-color: #575555;`;
 }
 
+/**
+ * Function that graphically lays out the transmission. Is shown first when frontend become active.
+ */
 function drawIntermission() {
     const div00 = document.createElement("div");
     div00.className = "Container";
@@ -101,17 +139,27 @@ function drawIntermission() {
     div00.appendChild(p00);
 }
 
+/**
+ * Function that displays the transmission as opposed to the openpose editor.
+ */
 function switchToIntermission() {
-    parent = document.getElementById("app_window");
-    newChild = document.getElementById("container_intermission");
-    oldChild = document.getElementById("container_openpose");
+    const parent = document.getElementById("app_window");
+    const newChild = document.getElementById("container_intermission");
+    const oldChild = document.getElementById("container_openpose");
     parent.replaceChild(newChild, oldChild);
 }
 
+/**
+ * Function that changes what message is displayed during transmission.
+* @param {String} message - Text to be displayed.
+ */
 function setIntermissionMessage(message) {
     document.getElementById("intermission_text").innerText = message;
 }
 
+/**
+ * Function that graphically lays out the openpose editor.
+ */
 function drawOpenposeEditor() {
     const div00 = document.createElement("div");
     div00.className = "Container";
@@ -127,9 +175,13 @@ function drawOpenposeEditor() {
     div02.id = "input_img_section";
     div01.appendChild(div02);
 
-    const img00 = document.createElement("img");
-    img00.id = "img_reference";
-    div01.appendChild(img00);
+    const img = document.createElement("img");
+    img.id = "img_reference";
+    div02.appendChild(img);
+
+    const canv = document.createElement("canv");
+    canv.id = "openpose_canvas";
+    div02.appendChild(canv);
 
     const div03 = document.createElement("div");
     div03.className = "Horizontal_Second";
@@ -178,7 +230,7 @@ function drawOpenposeEditor() {
     div08.appendChild(p04);
 
     const div09 = document.createElement("div");
-    div09.className = "Control_Button";
+    div09.className = "Figure_Button";
     div09.id = "next_button";
     div06.appendChild(div09);
 
@@ -186,6 +238,30 @@ function drawOpenposeEditor() {
     p05.className = "Arial25";
     p05.innerText = "Next";
     div09.appendChild(p05);
+
+    const div10 = document.createElement("div");
+    div10.id = "figure_add_remove_buttons";
+    div10.appendChild(div03);
+
+    const div11 = document.createElement("div");
+    div11.className = "Figure_Button";
+    div11.id = "add_figure_button";
+    div10.appendChild(div11);
+
+    const p06 = document.createElement("p");
+    p06.className = "Arial15";
+    p06.innerText = "Add Figure";
+    div11.appendChild(p06);
+
+    const div12 = document.createElement("div");
+    div12.className = "Figure_Button";
+    div12.id = "remove_figure_button";
+    div10.appendChild(div12);
+
+    const p07 = document.createElement("p");
+    p07.className = "Arial15";
+    p07.innerText = "Remove Figure";
+    div11.appendChild(p07);
 
     // Class related style modification.
     let nodeList = document.querySelectorAll("div.Container");
@@ -219,7 +295,56 @@ function drawOpenposeEditor() {
 
     nodeList = document.querySelectorAll("div.Control_Button");
     for (let i = 0; i < nodeList.length; i++) {
-        nodeList[i].style.width = "40%";
+        nodeList[i].style =
+        `width: auto;
+        border: 3px solid #acacac;
+        border-radius: 8px;
+        margin: 0px 10px;
+        padding: 5px;
+        cursor: pointer;`;
+
+        nodeList[i].addEventListener("mouseover", () => {
+            nodeList[i].style.borderColor = "#f19224";
+        });
+
+        nodeList[i].addEventListener("mouseleave", () => {
+            nodeList[i].style.borderColor = "#acacac";
+        });
+
+        nodeList[i].addEventListener("click", () => {
+            nodeList[i].firstChild.style.color = "#f19224";
+        });
+
+        nodeList[i].addEventListener("mouseup", () => {
+            nodeList[i].firstChild.style.colors = "#acacac";
+        });
+    }
+
+    nodeList = document.querySelectorAll("div.Figure_Button");
+    for (let i = 0; i < nodeList.length; i++) {
+        nodeList[i].style =
+        `width: auto;
+        border: 3px solid #acacac;
+        border-radius: 8px;
+        margin: 0px 10px;
+        padding: 5px;
+        cursor: pointer;`;
+
+        nodeList[i].addEventListener("mouseover", () => {
+            nodeList[i].style.borderColor = "#f19224";
+        });
+
+        nodeList[i].addEventListener("mouseleave", () => {
+            nodeList[i].style.borderColor = "#acacac";
+        });
+
+        nodeList[i].addEventListener("click", () => {
+            nodeList[i].firstChild.style.color = "#f19224";
+        });
+
+        nodeList[i].addEventListener("mouseup", () => {
+            nodeList[i].firstChild.style.colors = "#acacac";
+        });
     }
 
     nodeList = document.querySelectorAll("p.Arial25");
@@ -227,8 +352,15 @@ function drawOpenposeEditor() {
         nodeList[i].style =
         `font-family: Arial, Helvetica, sans-serif;
         font-size: 25px;
-        color: white;
-        margin: 0;`;
+        color: white;`;
+    }
+
+    nodeList = document.querySelectorAll("p.Arial15");
+    for (let i = 0; i < nodeList.length; i++) {
+        nodeList[i].style =
+        `font-family: Arial, Helvetica, sans-serif;
+        font-size: 15px;
+        color: white;`;
     }
 
     // ID related style modification.
@@ -257,6 +389,11 @@ function drawOpenposeEditor() {
     margin: auto;
     cursor: pointer;`;
 
+    node = document.getElementById("openpose_canvas");
+    node.style.position = "absolute";
+    node.style.height = "1px";
+    node.style.width = "1px";
+
     node = document.getElementById("settings_section");
     node.style.borderRadius = "4px";
     node.style.border = "1px solid #acacac";
@@ -274,12 +411,18 @@ function drawOpenposeEditor() {
     node.style.display = "flex";
     node.style.justifyContent = "center";
     node.style.alignItems = "center";
+
+    node = document.getElementById("figure_add_remove_buttons");
+    node.style.display = "flex";
+    node.style.flexDirection = "row";
+    node.style.justifyContent = "center";
+    node.style.alignItems = "center";
 }
 
 function switchToOpenposeEditor() {
-    parent = document.getElementById("app_window");
-    newChild = document.getElementById("container_openpose");
-    oldChild = document.getElementById("container_intermission");
+    const parent = document.getElementById("app_window");
+    const newChild = document.getElementById("container_openpose");
+    const oldChild = document.getElementById("container_intermission");
     parent.replaceChild(newChild, oldChild);
 }
 
@@ -289,7 +432,7 @@ function setTotal(numberOfImages) {
 
 // [WIP] Function that changes the content of the pair object to what has been sent to the frontend.
 function updatePair(receivedImg, receivedFigures) {
-    newFigures = [];
+    const newFigures = [];
 
     for (let i = 0; i < newFigures.length; i++) {
         newFigures.push(JSON.parse(receivedFigures[i]));
@@ -302,66 +445,162 @@ function updatePair(receivedImg, receivedFigures) {
 }
 
 function displayFigureData() {
-    parent = document.getElementById("settings_section");
+    const parent = document.getElementById("settings_section");
+    const last = document.getElementById("figure_add_remove_buttons");
 
     for (let i = 0; i < pair.figures.length; i++) {
-        figure = pair.figures[i];
-        keys = Object.keys(figure);
-        values = Object.values(figure);
+        let figure = pair.figures[i];
+        let keys = Object.keys(figure);
+        let values = Object.values(figure);
 
         for (let j = 0; j < keys.length; j++) {
-            const div00 = document.createElement("div");
+            let div00 = document.createElement("div");
             div00.className = "Landmarks_Entry";
             div00.id = "figure_" + i + "_" + keys[j] + "_entry";
-            parent.appendChild(div00);
+            parent.insertBefore(div00, last); 
 
-            const p00 = document.createElement("p");
+            let p00 = document.createElement("p");
             p00.innerText = "Figure " + i;
             div00.appendChild(p00);
 
-            const p01 = document.createElement("p");
+            let p01 = document.createElement("p");
             p01.innerText = keys[j];
             div00.appendChild(p01);
 
-            const p02 = document.createElement("p");
-            p02.id = keys[j] + "_vector";
+            let p02 = document.createElement("p");
+            p02.id = "figure_" + i + "_" + keys[j] + "_vector";
             p02.innerText = "(" + values[j].toString() + ")";
             div00.appendChild(p02);
+
+            div00.style =
+            `width: 99%;
+            border: 1px solid #acacac;
+            margin: 5px 0px 0px 0px;
+            display: flex;
+            flex-direction: row;
+            flex-shrink: 0;
+            overflow: hidden;`;
+
+            p00.style =
+            `font-family: Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            color: white;
+            margin: 5px 15px 5px 10px;}`;
+
+            p01.style =
+            `font-family: Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            color: white;
+            margin: 5px 15px 5px 10px;}`;
+
+            p02.style =
+            `font-family: Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            color: white;
+            margin: 5px 15px 5px 10px;}`;
+
+            div00.addEventListener("mouseover", () => {
+                div00.style.borderColor = "#f19224";
+            });
+
+            div00.addEventListener("mouseleave", () => {
+                div00.style.borderColor = "#acacac";
+            });
+
+            div00.addEventListener("click", () => {
+                p00.style.borderColor = "#f19224";
+                p01.style.borderColor = "#f19224";
+                p02.style.borderColor = "#f19224";
+            });
+
+            div00.addEventListener("mouseup", () => {
+                p00.style.borderColor = "#acacac";
+                p01.style.borderColor = "#acacac";
+                p02.style.borderColor = "#acacac";
+            });
         }
     }
+
+    renderFigure();
 }
 
 function displayLatestFigureData() {
-    index = pair.figures.length-1;
-    parent = document.getElementById("settings_section");
+    let index = pair.figures.length-1;
+    const parent = document.getElementById("settings_section");
+    const last = document.getElementById("figure_add_remove_buttons");
 
-    figure = pair.figures[index];
-    keys = Object.keys(figure);
-    values = Object.values(figure);
+    const figure = pair.figures[index];
+    const keys = Object.keys(figure);
+    const values = Object.values(figure);
 
     for (let i = 0; i < keys.length; i++) {
-        const div00 = document.createElement("div");
+        let div00 = document.createElement("div");
         div00.className = "Landmarks_Entry";
         div00.id = "figure_" + index + "_" + keys[i] + "_entry";
-        parent.appendChild(div00);
+        parent.insertBefore(div00, last); 
 
-        const p00 = document.createElement("p");
+        let p00 = document.createElement("p");
         p00.innerText = "Figure " + index;
         div00.appendChild(p00);
 
-        const p01 = document.createElement("p");
+        let p01 = document.createElement("p");
         p01.innerText = keys[i];
         div00.appendChild(p01);
 
-        const p02 = document.createElement("p");
+        let p02 = document.createElement("p");
         p02.id = keys[i] + "_vector";
         p02.innerText = "(" + values[i].toString() + ")";
         div00.appendChild(p02);
+
+        div00.style =
+        `width: 99%;
+        border: 1px solid #acacac;
+        margin: 5px 0px 0px 0px;
+        display: flex;
+        flex-direction: row;
+        flex-shrink: 0;
+        overflow: hidden;`;
+
+        p00.style =
+        `font-family: Arial, Helvetica, sans-serif;
+        font-size: 20px;
+        color: white;
+        margin: 5px 15px 5px 10px;}`;
+
+        p01.style =
+        `font-family: Arial, Helvetica, sans-serif;
+        font-size: 20px;
+        color: white;
+        margin: 5px 15px 5px 10px;}`;
+
+        p02.style =
+        `font-family: Arial, Helvetica, sans-serif;
+        font-size: 20px;
+        color: white;
+        margin: 5px 15px 5px 10px;}`;
+
+        div00.addEventListener("mouseover", () => {
+            div00.style.borderColor = "#f19224"
+        });
+
+        div00.addEventListener("mouseleave", () => {
+            div00.style.borderColor = "#acacac"
+        });
+
+        div00.addEventListener("click", () => {
+            p00.style.borderColor = "#f19224";
+            p01.style.borderColor = "#f19224";
+            p02.style.borderColor = "#f19224";
+        });
+
+        div00.addEventListener("mouseup", () => {
+            p00.style.borderColor = "#acacac";
+            p01.style.borderColor = "#acacac";
+            p02.style.borderColor = "#acacac";
+        });
     }
-}
 
-function editDisplayedLandmarkEntry(figure_num, landmark, vector) {
-
+    renderFigure();
 }
 
 // Function that inserts the given image into the img tag.
@@ -369,8 +608,59 @@ function insertImage() {
 
 }
 
+function renderFigure() {
+    const img_element = document.getElementById("img_reference");
+    const canv_element = document.getElementById("openpose_canvas");
+    const context = canv_element.getContext("2d");
+
+    context.clearRect(0, 0, canv_width, canv_height);
+
+    canv_element.style.top = img_element.offsetTop;
+    canv_element.style.left = img_element.offsetLeft;
+    canv_element.style.height = pair.image.height;
+    canv_element.style.width = pair.image.width;
+
+    canv_height = pair.image.height;
+    canv_width = pair.image.width;
+
+    for (let figure in pair.figures) {
+        for (let element in render_order) {
+
+            if (element.includes("-")) {
+                let [kp1, kp2] = openepose_relations.get(element);
+
+                if (figure[kp1][2] < MIN_CONFIDENCE || figure[kp2][2 < MIN_CONFIDENCE]) {
+                    continue;
+                }
+
+                let [red, green, blue] = relation_colors.get(element);
+
+                context.beginPath();
+                context.moveTo(figure[kp1][0], figure[kp1][1]);
+                context.lineTo(figure[kp2][0], figure[kp2][1]);
+                context.lineWidth = EDGE_THICKNESS;
+                context.strokeStyle = `rgb(${red}, ${green}, ${blue})`;
+                context.stroke();
+
+            } else {
+                if (figure[element][2] < MIN_CONFIDENCE) {
+                    continue;
+                }
+
+                let [red, green, blue] = keypoint_colors.get(element);
+
+                context.beginPath();
+                context.arc(figure[element][0], figure[element][1], KEYPOINT_RADIUS, 0, 2 * Math.PI);
+                context.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+                context.fill();
+
+            }
+        }
+    }
+}
+
 function incrementCursor() {
-    landmarks = Object.keys(openepose_keypoints);
+    const landmarks = Object.keys(openepose_keypoints);
     
     if (cursor.key == landmarks[landmarks.length-1]) {
         return;
@@ -379,20 +669,6 @@ function incrementCursor() {
     for (let i = 0; i < landmarks.length-1; i++) {
         if (cursor.key == landmarks[i]) {
             cursor.key = landmarks[i+1];
-        }
-    }
-}
-
-function decrementCursor() {
-    landmarks = Object.keys(openepose_keypoints);
-    
-    if (cursor.key == landmarks[0]) {
-        return;
-    }
-
-    for (let i = 1; i < landmarks.length; i++) {
-        if (cursor.key == landmarks[i]) {
-            cursor.key = landmarks[i-1];
         }
     }
 }
