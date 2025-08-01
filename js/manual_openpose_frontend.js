@@ -524,6 +524,7 @@ function displayFigureData() {
 
             // Make the first entry orange at the beginning.
             if (i == 0 && j == 0) {
+                div00.style.borderColor = "#f19224";
                 p00.style.color = "#f19224";
                 p01.style.color = "#f19224";
                 p02.style.color = "#f19224";
@@ -536,17 +537,27 @@ function displayFigureData() {
             });
 
             div00.addEventListener("mouseleave", () => {
+                if (div00.id == "figure_" + cursor.figure + "_" + cursor.key + "_entry") {
+                    return;
+                }
+
                 div00.style.borderColor = "#acacac";
             });
 
             // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
             div00.addEventListener("click", () => {
+                const entry_frames = document.getElementsByClassName("Landmarks_Entry");
                 const paragraphs = document.getElementsByClassName("Entry_Text");
+
+                for (let entry_frame in entry_frames) {
+                    entry_frame.style.borderColor = "#acacac";
+                }
 
                 for (let paragraph in paragraphs) {
                     paragraph.style.color = "#acacac";
                 }
 
+                div00.style.borderColor = "#f19224";
                 p00.style.color = "#f19224";
                 p01.style.color = "#f19224";
                 p02.style.color = "#f19224";
@@ -622,17 +633,27 @@ function displayLatestFigureData() {
         });
 
         div00.addEventListener("mouseleave", () => {
+            if (div00.id == "figure_" + cursor.figure + "_" + cursor.key + "_entry") {
+                return;
+            }
+
             div00.style.borderColor = "#acacac"
         });
 
         // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
         div00.addEventListener("click", () => {
+            const entry_frames = document.getElementsByClassName("Landmarks_Entry");
             const paragraphs = document.getElementsByClassName("Entry_Text");
+
+            for (let entry_frame in entry_frames) {
+                entry_frame.style.borderColor = "#acacac";
+            }
 
             for (let paragraph in paragraphs) {
                 paragraph.style.color = "#acacac";
             }
 
+            div00.style.borderColor = "#f19224";
             p00.style.color = "#f19224";
             p01.style.color = "#f19224";
             p02.style.color = "#f19224";
