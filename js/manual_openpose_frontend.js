@@ -33,7 +33,6 @@ function addFigure() {
     const emptyFigure = Object.assign({}, openepose_keypoints);
     pair.figures.push(emptyFigure);
     displayLatestFigureData();
-    renderFigure();
 }
 
 /**
@@ -41,7 +40,7 @@ function addFigure() {
  */
 function removeFigure() {
     index = pair.figures.length-1;
-    children = document.querySelectorAll(`[id^="figure_${index}"]`);
+    children = document.querySelectorAll(`div[id^="figure_${index}"]`);
 
     if (pair.figures.length == 1) {
         const emptyFigure = Object.assign({}, openepose_keypoints);
@@ -56,11 +55,12 @@ function removeFigure() {
 
     } else {
         pair.figures.pop();
-
+        
         for (child in children) {
             child.remove();
         }
 
+        document.getElementById("settings_section").firstChild.dispatchEvent(new Event('click'));
         renderFigure();
     }
 }
@@ -72,10 +72,16 @@ function removeFigure() {
  * @param {Array(Number)} vector - Coordinates and confidence value for landmark of referenced figure.
  */
 function changeLandmarkEntry(figure_num, landmark, vector) {
+    // Update coordinate values and confidence based on args.
     pair.figures[figure_num][landmark] = vector;
     document.getElementById("figure_" + figure_num + "_" + landmark + "_vector").innerText = "(" + vector.toString() + ")";
+
+    // Render the openpose figure(s) again based on the updated vector.
     renderFigure();
-    incrementCursor();
+
+    // Send the current entry div element and increment the cursor.
+    const entry = document.getElementById("figure_" + figure_num + "_" + landmark + "_entry");
+    incrementCursor(entry);
 }
 
 /**
@@ -316,7 +322,7 @@ function drawOpenposeEditor() {
         });
 
         nodeList[i].addEventListener("mouseup", () => {
-            nodeList[i].firstChild.style.colors = "#acacac";
+            nodeList[i].firstChild.style.color = "#acacac";
         });
     }
 
@@ -343,7 +349,7 @@ function drawOpenposeEditor() {
         });
 
         nodeList[i].addEventListener("mouseup", () => {
-            nodeList[i].firstChild.style.colors = "#acacac";
+            nodeList[i].firstChild.style.color = "#acacac";
         });
     }
 
@@ -389,6 +395,14 @@ function drawOpenposeEditor() {
     margin: auto;
     cursor: pointer;`;
 
+    node.addEventListener("click", event => {
+        let rect = image.getBoundingClientRect();
+        let x_pos = event.clientX - rect.left;
+        let y_pos = event.clientY - rect.top;
+
+        changeLandmarkEntry(cursor.figure, cursor.key, [x_pos, y_pos, 0.95]);
+    });
+
     node = document.getElementById("openpose_canvas");
     node.style.position = "absolute";
     node.style.height = "1px";
@@ -417,6 +431,12 @@ function drawOpenposeEditor() {
     node.style.flexDirection = "row";
     node.style.justifyContent = "center";
     node.style.alignItems = "center";
+
+    node = document.getElementById("add_figure_button");
+    node.addEventListener("click", addFigure);
+
+    node = document.getElementById("remove_figure_button");
+    node.addEventListener("click", removeFigure);
 }
 
 function switchToOpenposeEditor() {
@@ -460,14 +480,17 @@ function displayFigureData() {
             parent.insertBefore(div00, last); 
 
             let p00 = document.createElement("p");
+            p00.className = "Entry_Text";
             p00.innerText = "Figure " + i;
             div00.appendChild(p00);
 
             let p01 = document.createElement("p");
+            p00.className = "Entry_Text";
             p01.innerText = keys[j];
             div00.appendChild(p01);
 
             let p02 = document.createElement("p");
+            p00.className = "Entry_Text";
             p02.id = "figure_" + i + "_" + keys[j] + "_vector";
             p02.innerText = "(" + values[j].toString() + ")";
             div00.appendChild(p02);
@@ -499,6 +522,15 @@ function displayFigureData() {
             color: white;
             margin: 5px 15px 5px 10px;}`;
 
+            // Make the first entry orange at the beginning.
+            if (i == 0 && j == 0) {
+                p00.style.color = "#f19224";
+                p01.style.color = "#f19224";
+                p02.style.color = "#f19224";
+
+                resetCursor();
+            }
+
             div00.addEventListener("mouseover", () => {
                 div00.style.borderColor = "#f19224";
             });
@@ -507,16 +539,19 @@ function displayFigureData() {
                 div00.style.borderColor = "#acacac";
             });
 
+            // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
             div00.addEventListener("click", () => {
-                p00.style.borderColor = "#f19224";
-                p01.style.borderColor = "#f19224";
-                p02.style.borderColor = "#f19224";
-            });
+                const paragraphs = document.getElementsByClassName("Entry_Text");
 
-            div00.addEventListener("mouseup", () => {
-                p00.style.borderColor = "#acacac";
-                p01.style.borderColor = "#acacac";
-                p02.style.borderColor = "#acacac";
+                for (let paragraph in paragraphs) {
+                    paragraph.style.color = "#acacac";
+                }
+
+                p00.style.color = "#f19224";
+                p01.style.color = "#f19224";
+                p02.style.color = "#f19224";
+            
+                setCursor(i, keys[i]);
             });
         }
     }
@@ -540,14 +575,17 @@ function displayLatestFigureData() {
         parent.insertBefore(div00, last); 
 
         let p00 = document.createElement("p");
+        p00.className = "Entry_Text";
         p00.innerText = "Figure " + index;
         div00.appendChild(p00);
 
         let p01 = document.createElement("p");
+        p00.className = "Entry_Text";
         p01.innerText = keys[i];
         div00.appendChild(p01);
 
         let p02 = document.createElement("p");
+        p00.className = "Entry_Text";
         p02.id = keys[i] + "_vector";
         p02.innerText = "(" + values[i].toString() + ")";
         div00.appendChild(p02);
@@ -587,16 +625,19 @@ function displayLatestFigureData() {
             div00.style.borderColor = "#acacac"
         });
 
+        // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
         div00.addEventListener("click", () => {
-            p00.style.borderColor = "#f19224";
-            p01.style.borderColor = "#f19224";
-            p02.style.borderColor = "#f19224";
-        });
+            const paragraphs = document.getElementsByClassName("Entry_Text");
 
-        div00.addEventListener("mouseup", () => {
-            p00.style.borderColor = "#acacac";
-            p01.style.borderColor = "#acacac";
-            p02.style.borderColor = "#acacac";
+            for (let paragraph in paragraphs) {
+                paragraph.style.color = "#acacac";
+            }
+
+            p00.style.color = "#f19224";
+            p01.style.color = "#f19224";
+            p02.style.color = "#f19224";
+
+            setCursor(index, keys[i]);
         });
     }
 
@@ -659,21 +700,20 @@ function renderFigure() {
     }
 }
 
-function incrementCursor() {
-    const landmarks = Object.keys(openepose_keypoints);
-    
-    if (cursor.key == landmarks[landmarks.length-1]) {
+function incrementCursor(entry) {
+    const nextSibling = entry.nextElementSibling;
+    const lastChild = document.getElementById("figure_add_remove_buttons");
+
+    // How to react if it was the last entry in the list.
+    if (nextSibling == lastChild) {
         return;
     }
 
-    for (let i = 0; i < landmarks.length-1; i++) {
-        if (cursor.key == landmarks[i]) {
-            cursor.key = landmarks[i+1];
-        }
-    }
+    nextSibling.dispatchEvent(new Event('click'));
 }
 
-function setKeyOfCursor(landmark) {
+function setCursor(figure_num, landmark) {
+    cursor.figure = figure_num;
     cursor.key = landmark;
 }
 
