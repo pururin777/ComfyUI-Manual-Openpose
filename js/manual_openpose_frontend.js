@@ -5,85 +5,14 @@ const pair = {};
 const cursor = {};
 let index = null;
 let total = null;
+// These global variables are necessary to clean a previous canvas whose scale will possibly change.
 let canv_height = null;
 let canv_width = null;
 
-MIN_CONFIDENCE = 0.05;
-KEYPOINT_RADIUS = 9;
-EDGE_THICKNESS = 7;
+const MIN_CONFIDENCE = 0.05;
+const KEYPOINT_RADIUS = 9;
+const EDGE_THICKNESS = 7;
  
-/**
- * Whenever the frontend is called at the next generation, reset the values of the global variables.
- */
-function initialize() {
-    pair.image = null;
-    pair.figures = [];
-    cursor.figure = 0;
-    cursor.key = "nose";
-    index = 0;
-    total = 0;
-    canv_height = 1;
-    canv_width = 1;
-}
-
-/**
- * Add empty figure data at the end of the array.
- */
-function addFigure() {
-    const emptyFigure = Object.assign({}, openepose_keypoints);
-    pair.figures.push(emptyFigure);
-    displayLatestFigureData();
-}
-
-/**
- * Either remove the last element or replace the only remaining element with empty figure data.
- */
-function removeFigure() {
-    index = pair.figures.length-1;
-    children = document.querySelectorAll(`div[id^="figure_${index}"]`);
-
-    if (pair.figures.length == 1) {
-        const emptyFigure = Object.assign({}, openepose_keypoints);
-        pair.figures[0] = emptyFigure;
-
-        for (child in children) {
-            child.remove();
-        }
-
-        displayFigureData();
-        renderFigure();
-
-    } else {
-        pair.figures.pop();
-        
-        for (child in children) {
-            child.remove();
-        }
-
-        document.getElementById("settings_section").firstChild.dispatchEvent(new Event('click'));
-        renderFigure();
-    }
-}
-
-/**
- * Function meant to the change the coordinates and confidence of a landmark for a given figure. Also changes the entry as seen in the GUI.
- * @param {Number} figure_num - Index of figure.
- * @param {String} landmark - Name of the landmark.
- * @param {Array(Number)} vector - Coordinates and confidence value for landmark of referenced figure.
- */
-function changeLandmarkEntry(figure_num, landmark, vector) {
-    // Update coordinate values and confidence based on args.
-    pair.figures[figure_num][landmark] = vector;
-    document.getElementById("figure_" + figure_num + "_" + landmark + "_vector").innerText = "(" + vector.toString() + ")";
-
-    // Render the openpose figure(s) again based on the updated vector.
-    renderFigure();
-
-    // Send the current entry div element and increment the cursor.
-    const entry = document.getElementById("figure_" + figure_num + "_" + landmark + "_entry");
-    incrementCursor(entry);
-}
-
 /**
  * Function that coordinates what happens in frontend.
  */
@@ -101,6 +30,20 @@ function main() {
     switchToOpenposeEditor();
     displayFigureData();
 
+}
+
+/**
+ * Whenever the frontend is called at the next generation, reset the values of the global variables.
+ */
+function initialize() {
+    pair.image = null;
+    pair.figures = [];
+    cursor.figure = 0;
+    cursor.key = "nose";
+    index = 0;
+    total = 0;
+    canv_height = 1;
+    canv_width = 1;
 }
 
 // [WIP] A function triggered by an evenListener which receives how many images there are in total and then assigns the value to total.
@@ -170,6 +113,10 @@ function drawOpenposeEditor() {
     const div00 = document.createElement("div");
     div00.className = "Container";
     div00.id = "container_openpose";
+
+    // Flex_Horizontal divs themselves are ordered vertically inside the Container div and differentiated with the ID flex_horizontal_1/2.
+    // Horizontal_First is the horizontally ordered first div inside of a Flex_Horizontal div.
+    // Horizontal_Second in the horizontally ordered second div.
 
     const div01 = document.createElement("div");
     div01.className = "Flex_Horizontal";
@@ -379,11 +326,6 @@ function drawOpenposeEditor() {
     node = document.getElementById("flex_horizontal_1");
     node.style.height = "90%";
 
-    node = document.getElementById("img_counter_section");
-    node.style.display = "flex";
-    node.style.justifyContent = "center";
-    node.style.alignItems = "center";
-
     node = document.getElementById("img_reference");
     node.style =
     `max-height: 100%;
@@ -421,7 +363,7 @@ function drawOpenposeEditor() {
     node = document.getElementById("flex_hozizontal_2");
     node.style.height = "10%";
 
-    node = document.getElementById("ing_counter_section");
+    node = document.getElementById("img_counter_section");
     node.style.display = "flex";
     node.style.justifyContent = "center";
     node.style.alignItems = "center";
@@ -450,6 +392,70 @@ function setTotal(numberOfImages) {
     total = numberOfImages;
 }
 
+/**
+ * Add empty figure data at the end of the array.
+ */
+function addFigure() {
+    // Use template to make a new JS object. Assigning the template directly wouldn't make a copy but assign the same reference to the samce object, which is the template.
+    const emptyFigure = Object.assign({}, openepose_keypoints);
+    pair.figures.push(emptyFigure);
+    // Insert landmark entries in the Openpose landmarks list.
+    displayLatestFigureData();
+}
+
+/**
+ * Either remove the last element or replace the only remaining element with empty figure data.
+ */
+function removeFigure() {
+    index = pair.figures.length-1;
+    children = document.querySelectorAll(`div[id^="figure_${index}"]`);
+
+    if (pair.figures.length == 1) {
+        const emptyFigure = Object.assign({}, openepose_keypoints);
+        pair.figures[0] = emptyFigure;
+
+        for (child in children) {
+            child.remove();
+        }
+
+        // We are not only removing a figure in this case but also adding a new, empty figure. Therefore new entries must be made.
+        displayFigureData();
+        // renderFigure because rendered canvas must be made empty.
+        renderFigure();
+
+    } else {
+        pair.figures.pop();
+        
+        for (child in children) {
+            child.remove();
+        }
+
+        // We have no need to use displayFigureData here since no new figure is added. displayFigure would have reset the cursor's highlight.
+        // Therefore we have to do it manually here by triggering the eventListener of the first landmark entry in the list.
+        document.getElementById("settings_section").firstChild.dispatchEvent(new Event('click'));
+        renderFigure();
+    }
+}
+
+/**
+ * Function meant to the change the coordinates and confidence of a landmark for a given figure. Also changes the entry as seen in the GUI.
+ * @param {Number} figure_num - Index of figure.
+ * @param {String} landmark - Name of the landmark.
+ * @param {Array(Number)} vector - Coordinates and confidence value for landmark of referenced figure.
+ */
+function changeLandmarkEntry(figure_num, landmark, vector) {
+    // Update coordinate values and confidence based on args.
+    pair.figures[figure_num][landmark] = vector;
+    document.getElementById("figure_" + figure_num + "_" + landmark + "_vector").innerText = "(" + vector.toString() + ")";
+
+    // Render the Openpose figure(s) again based on the updated vector.
+    renderFigure();
+
+    // Send the current entry div element and increment the cursor.
+    const entry = document.getElementById("figure_" + figure_num + "_" + landmark + "_entry");
+    incrementCursor(entry);
+}
+
 // [WIP] Function that changes the content of the pair object to what has been sent to the frontend.
 function updatePair(receivedImg, receivedFigures) {
     const newFigures = [];
@@ -464,13 +470,16 @@ function updatePair(receivedImg, receivedFigures) {
     pair.img = newImg;
 }
 
+/**
+ * Function to create a list of all entries in settings_section with the figure data present.
+ */
 function displayFigureData() {
     const parent = document.getElementById("settings_section");
     const last = document.getElementById("figure_add_remove_buttons");
 
     for (let i = 0; i < pair.figures.length; i++) {
         let figure = pair.figures[i];
-        let keys = Object.keys(figure);
+        let keys = Object.keys(figure); // Alternatively, the Openpose figure template would have been appropriate here as well.
         let values = Object.values(figure);
 
         for (let j = 0; j < keys.length; j++) {
@@ -536,6 +545,7 @@ function displayFigureData() {
                 div00.style.borderColor = "#f19224";
             });
 
+            // If an entry is already active then "mouseleave" shouldn't turn it dim again.
             div00.addEventListener("mouseleave", () => {
                 if (div00.id == "figure_" + cursor.figure + "_" + cursor.key + "_entry") {
                     return;
@@ -570,6 +580,9 @@ function displayFigureData() {
     renderFigure();
 }
 
+/**
+ * Function to add to the list of entries in settings_section the data of the last figure.
+ */
 function displayLatestFigureData() {
     let index = pair.figures.length-1;
     const parent = document.getElementById("settings_section");
@@ -665,16 +678,25 @@ function displayLatestFigureData() {
     renderFigure();
 }
 
-// Function that inserts the given image into the img tag.
+/**
+ * Function that inserts the recently received image.
+ */
 function insertImage() {
-
+    // Depending on how this programatically works, delete the previous image to not burden the memory of the frontend.
+    // Must occur before the use of the renderFigure.
+    // Must update pair.i
 }
 
+/**
+ * Function create a canvas laid on top of the current image and render an openpose figure on top of it.
+ * Due to this being a pixel based method, the entire canvas must be deleten and rendered again if you want to alter parts of it.
+ */
 function renderFigure() {
     const img_element = document.getElementById("img_reference");
     const canv_element = document.getElementById("openpose_canvas");
     const context = canv_element.getContext("2d");
-
+ 
+    // Clean previous canvis, for which past scale is needed.
     context.clearRect(0, 0, canv_width, canv_height);
 
     canv_element.style.top = img_element.offsetTop;
@@ -682,6 +704,7 @@ function renderFigure() {
     canv_element.style.height = pair.image.height;
     canv_element.style.width = pair.image.width;
 
+    // Update new canvis scale.
     canv_height = pair.image.height;
     canv_width = pair.image.width;
 
@@ -721,6 +744,10 @@ function renderFigure() {
     }
 }
 
+/**
+ * Function meant to increment the cursor unless we are already at the end of the landmarks list.
+ * @param {div} entry The current entry that the cursor points to.
+ */
 function incrementCursor(entry) {
     const nextSibling = entry.nextElementSibling;
     const lastChild = document.getElementById("figure_add_remove_buttons");
@@ -733,21 +760,35 @@ function incrementCursor(entry) {
     nextSibling.dispatchEvent(new Event('click'));
 }
 
+/**
+ * Function that sets the cursor specifically.
+ * @param {Number} figure_num Index of the figure that the cursor should point to.
+ * @param {Strong} landmark String of the landmark that the cursor should point to.
+ */
 function setCursor(figure_num, landmark) {
     cursor.figure = figure_num;
     cursor.key = landmark;
 }
 
+/**
+ * Function to set the cursor to its initial state.
+ */
 function resetCursor() {
     cursor.figure = 0;
     cursor.key = "nose";
 }
 
+/**
+ * Function to increment the index.
+ */
 function incrementIndex() {
     index++;
     document.getElementById("image_counter").innerText = `This is image ${index} out of ${total}.`;
 }
 
+/**
+ * Function to decrement the index.
+ */
 function decrementIndex() {
     index--;
     document.getElementById("image_counter").innerText = `This is image ${index} out of ${total}.`;

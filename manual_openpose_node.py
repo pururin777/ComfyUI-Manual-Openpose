@@ -4,7 +4,7 @@ import numpy as np
 
 from templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER
 
-# Global variables
+# Global variables.
 EDGE_THICKNESS = 2
 VERTEX_RADIUS = 4
 VERTEX_THICKNESS = -1
@@ -29,19 +29,33 @@ class ManualOpenposeNode:
 
     CATEGORY = "Pururin777 Nodes"
 
-    # Converts python format for openpsoe_data and render_order into .json files for transmission.
+    '''
+    # Converts a Python dictionary into a JSON formatted string.
+    # @param {dict} dict - Dictionary that describes an openpose figure.
+    # @return {string} JSON string made out of dictionary.
+    '''
     @staticmethod
     def convertToJSON(dict):
         return json.dumps(dict, indent=4)
 
-    # Converts .json to python format. Will be necessary once "Send All" has been clicked and confirmed.
+    '''
+    # Converts a JSON string into a Python dictionary. Relevant for when "Send All" signal is made from frontend.
+    # @param {string} json_str - JSON string that describes an openpose figure.
+    # @return {dict} Dictionary made out of a JSON string.
+    '''
     @staticmethod
-    def convertToDict(json_file):
-        return json.load(json_file)
+    def convertToDict(json_str):
+        return json.loads(json_str)
 
-    # Creates new list that contains lists of three elements: [image, openpose_data, render_order]
+    '''
+    # Creates a list of lists (truple) which contain an image, figure dictionaries that describe openpose information
+    # and their respective pair of rendering information that is set after the "Send All" signal from the frontend.
+    # @param {list} truples - Empty list meant to contain truple data.
+    # @param {Image} ref_imgs - JSON string that describes an openpose figure.
+    # @return {list} truples - List that contains initialized truple data.
+    '''
     @staticmethod
-    def pairWithOpenposeAndRenderData(truples, ref_imgs):
+    def prepareTruples(truples, ref_imgs):
         figure = ManualOpenposeNode.convertToJSON(OPENPOSE_KEYPOINTS)
 
         for img in ref_imgs:
@@ -49,33 +63,42 @@ class ManualOpenposeNode:
 
         return truples
 
-    # Renders a relation. Checks if both vertices have been rendered.
+    '''
+    # Renders the edge of a figure given figure information.
+    # @param {Image} op_img - Image that is rendered onto.
+    # @param {dict} figure - Dictionary that describes an openpose figure.
+    # @param {string} relation - String that references a specific landmarks relation.
+    '''
     @staticmethod
     def renderRelation(op_img, figure, relation):
         x1, y1 = figure[OPENPOSE_RELATIONS[relation][0]][0], figure[OPENPOSE_RELATIONS[relation][0]][1]
         x2, y2 = figure[OPENPOSE_RELATIONS[relation][1]][0], figure[OPENPOSE_RELATIONS[relation][1]][1]
         cv2.line(op_img, (x1, y1), (x2, y2), RELATION_COLORS[relation], EDGE_THICKNESS)
 
-    # Renders a vertex. Dosn't render when c < 0.05 and if out of bounds.
+    '''
+    # Renders the vertex of a figure given figure information.
+    # @param {Image} op_img - Image that is rendered onto.
+    # @param {dict} figure - Dictionary that describes an openpose figure.
+    # @param {string} landmark - String that references a specific openpose figure landmark.
+    '''
     @staticmethod
     def renderKeypoint(op_img, figure, landmark):
         x, y = figure[landmark][0], figure[landmark][1]
         cv2.circle(op_img, (x, y), VERTEX_RADIUS, KEYPOINT_COLORS[landmark], VERTEX_THICKNESS)
 
-    # Add a default render order list to be paired with its respective figure.
+    '''
+    # Creates and adds a corresponding pair of render data that is stripped of low confidence landmarks and subsequently relations that contain them.
+    # @param {int} width - The image's width of this truple.
+    # @param {int} height - The image's height of this truple.
+    # @param {list} truple - List consisting of image, figure data and as of yet empty render data.
+    # @return {list} List of prepared render data.
+    '''
     @staticmethod
-    def addRenderData(truple):
+    def prepareRenderPair(width, height, truple):
+        # Go through all the figures that exist.
         for i in range(0, len(truple[1])-1):
             truple[2].append(RENDER_ORDER.copy())
 
-        return truple[2]
-
-    # Removes all graphical elements from the render order that shouldn't be rendered.
-    @staticmethod
-    def cleanUpRenderList(width, height, truple):
-        # Go through all the figures that exist.
-        for i in range(0, len(truple[1])-1):
-            # For figure i, go through each keypoint.
             for key in truple[1][i]:
                 # If the keypount is outside of the image or has too low confidence then remove it from the render order.
                 if key[0] >= width or key[1] >= height or key[2] < MIN_CONFIDENCE:
@@ -86,7 +109,13 @@ class ManualOpenposeNode:
         
         return truple[2]
 
-    # Creates an empty image and then renders each figure based on landmark and render information.
+    '''
+    # Create empty image and renders it based on truple information.
+    # @param {int} width - The image's width of this truple.
+    # @param {int} height - The image's height of this truple.
+    # @param {list} truple - List consisting of image, figure data and render data.
+    # @return {Image} op_img - Rendered openpose image.
+    '''
     @staticmethod
     def renderOpenposeImage(width, height, truple):
         op_img = np.zeros((width, height, 3), dtype=np.uint8)
@@ -101,12 +130,22 @@ class ManualOpenposeNode:
         
         return op_img
 
-    # Updates truples in backend after frontend data has been received.
+    '''
+    # Updates specific truple after frontend has sent a response.
+    # @param {list} truple - List consisting of image, figure data and render data.
+    # @param {list} figures - New figure data from frontend.
+    # @return {Image} truple - Updated truple.
+    '''
     @staticmethod
-    def updateTruples(index, truples, figures):
-        truples[index][1] = figures
-        return truples
+    def updateTruple(truple, figures):
+        truple[1] = figures
+        return truple
 
+    '''
+    # Converts all Python dictionaries of the list of figures into JSON strings.
+    # @param {list} truples - List consisting of image, figure data and render data.
+    # @return {Image} truples - Updated truples.
+    '''
     @staticmethod
     def convertAllDictToJSON(truples):
         for truple in truples:
@@ -114,7 +153,11 @@ class ManualOpenposeNode:
                 figure = ManualOpenposeNode.convertToJSON(figure)
         return truples
 
-    # Converts all keypoint data in each truple from JSON to Python dict.s
+    '''
+    # Converts all JSON strings of the list of figures into Python dictionaries.
+    # @param {list} truples - List consisting of image, figure data and render data.
+    # @return {Image} truples - Updated truples.
+    '''
     @staticmethod
     def convertAllJSONToDict(truples):
         for truple in truples:
@@ -122,7 +165,11 @@ class ManualOpenposeNode:
                 figure = ManualOpenposeNode.convertToDict(figure)
         return truples
 
-    # The main function of the node that coordinates the other functions and will return a batch of reference images and a batch of openpose images as the node's output.
+    '''
+    # Main function of the node that is called when the node is reached in ComfyUI.
+    # Takes in a batch of images and allows to manually create Openpose images for each of them.
+    # @param {IMAGE*} ref_imgs - Batch of images the node received as input.
+    '''
     def manual_openpose_main(ref_imgs):
         # Prepare the lists that you will need.
         current_index = 0
@@ -130,7 +177,7 @@ class ManualOpenposeNode:
         op_imgs = []
 
         # Initialize truples and then turn their figures into a JSON string to be sent.
-        truples = ManualOpenposeNode.pairWithOpenposeAndRenderData(truples, ref_imgs)
+        truples = ManualOpenposeNode.prepareTruples(truples, ref_imgs)
         truples = ManualOpenposeNode.convertAllDictToJSON(truples)
 
         '''
@@ -139,22 +186,30 @@ class ManualOpenposeNode:
         sendToFrontend(total_imgs)
 
         # This should be a do-while loop
-        sendToFrontend(truples[current_index])
+        sendToFrontend(truples[current_index][0], truples[current_index][1])
 
-        figures, new_index = receiveFromFrontend()
-        truples = ManualOpenposeNode.updateTruples(current_index, truples, figures)
-        current_index = new_index
+        # Waiting for signal (Previous: -1, Send All: 0, Next: 1)
+            figures, signal = receiveFromFrontend()
+
+            # Update truple
+            truple[currentIndex] = ManualOpenposeNode.updateTruple(truples[currentIndex], figures)
+
+            switch signal {
+            case -1:
+                current_index--
+            case 0:
+                break
+            case 1:
+                current_index++
+            }
         '''
-
-        # When "Send All" is received the code that updates truples must be run a last time.
 
         truples = ManualOpenposeNode.convertAllJSONToDict(truples)
 
         for i in range(len(truples)-1):
             img_width = truples[i][0].getWidth() # Just a placeholder. Find the appropriate function.
             img_height = truples[i][0].getHeight() # Just a placeholder. Find the appropriate function.
-            truples[2] = ManualOpenposeNode.addRenderData(truples[i])
-            truples[2] = ManualOpenposeNode.cleanUpRenderList(img_width, img_height, truples[i])
+            truples[2] = ManualOpenposeNode.prepareRenderPair(img_width, img_height, truples[i])
             op_imgs.append(ManualOpenposeNode.renderOpenposeImage(img_width, img_height, truples[i]))
 
         return (ref_imgs, op_imgs)
