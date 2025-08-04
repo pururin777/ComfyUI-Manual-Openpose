@@ -154,7 +154,7 @@ function drawOpenposeEditor() {
     const p02 = document.createElement("p");
     p02.className = "Arial25";
     p02.id = "image_counter";
-    p02.innerText = `This is image ${index} out of ${total}.`;
+    p02.innerText = `This is image ${index+1} out of ${total}.`;
     div05.appendChild(p02);
 
     const div06 = document.createElement("div");
@@ -783,7 +783,7 @@ function resetCursor() {
  */
 function incrementIndex() {
     index++;
-    document.getElementById("image_counter").innerText = `This is image ${index} out of ${total}.`;
+    document.getElementById("image_counter").innerText = `This is image ${index+1} out of ${total}.`;
 }
 
 /**
@@ -791,5 +791,5 @@ function incrementIndex() {
  */
 function decrementIndex() {
     index--;
-    document.getElementById("image_counter").innerText = `This is image ${index} out of ${total}.`;
+    document.getElementById("image_counter").innerText = `This is image ${index+1} out of ${total}.`;
 }
