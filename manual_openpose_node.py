@@ -198,10 +198,25 @@ class ManualOpenposeNode:
     '''
     @staticmethod
     def tensor_to_pil(image_tensor):
-        image_np = image_tensor.cpu().numpy()
-        image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
-        image_np = np.transpose(image_np, (1, 2, 0))
-        return Image.fromarray(image_np)
+        image_np = image_tensor.cpu().numpy()  # shape: [C, H, W]
+
+        if image_np.ndim != 3:
+            raise ValueError(f"Expected 3D tensor (C, H, W), got shape {image_np.shape}")
+
+        if image_np.shape[0] == 1:
+            # Grayscale: remove channel dimension
+            image_np = np.squeeze(image_np, axis=0)  # shape: [H, W]
+            image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
+            return Image.fromarray(image_np, mode="L")
+
+        elif image_np.shape[0] == 3:
+            # RGB: transpose to HWC
+            image_np = np.transpose(image_np, (1, 2, 0))
+            image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
+            return Image.fromarray(image_np)
+
+        else:
+            raise ValueError(f"Unsupported number of channels: {image_np.shape[0]}")
 
     '''
     # route for lifting the block on backend.
