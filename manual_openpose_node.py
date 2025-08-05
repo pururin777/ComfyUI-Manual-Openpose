@@ -122,7 +122,7 @@ class ManualOpenposeNode:
     @staticmethod
     def prepareRenderPair(width, height, truple):
         # Go through all the figures that exist.
-        for i in range(0, len(truple[1])-1):
+        for i in range(0, len(truple[1])):
             truple[2].append(RENDER_ORDER.copy())
 
             for key in truple[1][i]:
@@ -146,7 +146,7 @@ class ManualOpenposeNode:
     def renderOpenposeImage(width, height, truple):
         op_img = np.zeros((width, height, 3), dtype=np.uint8)
 
-        for i in range(0, len(truple[1])-1):
+        for i in range(0, len(truple[1])):
             for element in truple[2][i]:
                 figure = truple[1][i]
                 if "-" in element:
@@ -175,8 +175,8 @@ class ManualOpenposeNode:
     @staticmethod
     def convertAllDictToJSON(truples):
         for truple in truples:
-            for figure in truple[1]:
-                figure = ManualOpenposeNode.convertToJSON(figure)
+            for i in range(len(truple[1])):
+                truple[1][i] = ManualOpenposeNode.convertToJSON(truple[1][i])
         return truples
 
     '''
@@ -187,8 +187,8 @@ class ManualOpenposeNode:
     @staticmethod
     def convertAllJSONToDict(truples):
         for truple in truples:
-            for figure in truple[1]:
-                figure = ManualOpenposeNode.convertToDict(figure)
+            for i in range(len(truple[1])):
+                truple[1][i] = ManualOpenposeNode.convertToDict(truple[1][i])
         return truples
 
     '''
@@ -252,9 +252,8 @@ class ManualOpenposeNode:
         truples = ManualOpenposeNode.convertAllJSONToDict(truples)
 
         for i in range(len(truples)-1):
-            img_width = truples[i][0].getWidth() # Just a placeholder. Find the appropriate function.
-            img_height = truples[i][0].getHeight() # Just a placeholder. Find the appropriate function.
-            truples[2] = ManualOpenposeNode.prepareRenderPair(img_width, img_height, truples[i])
+            img_width, img_height = truples[i][0].size # PIL.Image dimensions is accessed with ".size".
+            truples[i][2] = ManualOpenposeNode.prepareRenderPair(img_width, img_height, truples[i])
             op_imgs.append(ManualOpenposeNode.renderOpenposeImage(img_width, img_height, truples[i]))
 
         PromptServer.instance.send_sync("terminate-frontend")

@@ -3,13 +3,13 @@ import { openepose_keypoints, openepose_relations, render_order, keypoint_colors
 import { api } from "../../scripts/api.js"
 
 // Global variables.
-const pair = null;
-const cursor = null;
-let index = null;
-let total = null;
+const pair = { image: null, figures: [] };
+const cursor = { figure: 0, key: "nose" };
+let index = 0;
+let total = 0;
 // These global variables are necessary to clean a previous canvas whose scale will possibly change.
-let canv_height = null;
-let canv_width = null;
+let canv_height = 1;
+let canv_width = 1;
 
 const MIN_CONFIDENCE = 0.05;
 const KEYPOINT_RADIUS = 9;
@@ -143,7 +143,7 @@ function drawOpenposeEditor() {
     img.id = "img_reference";
     div02.appendChild(img);
 
-    const canv = document.createElement("canv");
+    const canv = document.createElement("canvas");
     canv.id = "openpose_canvas";
     div02.appendChild(canv);
 
@@ -349,7 +349,7 @@ function drawOpenposeEditor() {
     cursor: pointer;`;
 
     node.addEventListener("click", event => {
-        let rect = image.getBoundingClientRect();
+        let rect = node.getBoundingClientRect();
         let x_pos = event.clientX - rect.left;
         let y_pos = event.clientY - rect.top;
 
@@ -358,6 +358,7 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("openpose_canvas");
     node.style.position = "absolute";
+    node.style.pointerEvents = "none"; // So the canvas that is on top of the image definitely doesn't interfer.
     node.style.height = "1px";
     node.style.width = "1px";
 
@@ -371,7 +372,7 @@ function drawOpenposeEditor() {
     node.style.overflowY = "scroll";
     node.style.alignItems = "center";
 
-    node = document.getElementById("flex_hozizontal_2");
+    node = document.getElementById("flex_horizontal_2");
     node.style.height = "10%";
 
     node = document.getElementById("img_counter_section");
@@ -381,6 +382,10 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("previous_button");
     node.addEventListener("click", () => {
+        if (index == 0) {
+            return;
+        }
+
         fetch("/free-block", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -410,6 +415,10 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("next_button");
     node.addEventListener("click", () => {
+        if (index == total-1) {
+            return;
+        }
+
         fetch("/free-block", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -468,7 +477,7 @@ function removeFigure() {
         const emptyFigure = Object.assign({}, openepose_keypoints);
         pair.figures[0] = emptyFigure;
 
-        for (child in children) {
+        for (let child of children) {
             child.remove();
         }
 
@@ -480,7 +489,7 @@ function removeFigure() {
     } else {
         pair.figures.pop();
         
-        for (child in children) {
+        for (let child of children) {
             child.remove();
         }
 
@@ -517,7 +526,7 @@ function updatePair(receivedImg, receivedFigures) {
     const newFigures = [];
 
     // Convert the figure list made up of JSON string into JS objects.
-    for (let i = 0; i < newFigures.length; i++) {
+    for (let i = 0; i < receivedFigures.length; i++) {
         newFigures.push(JSON.parse(receivedFigures[i]));
     }
 
@@ -549,13 +558,13 @@ function displayFigureData() {
             div00.appendChild(p00);
 
             let p01 = document.createElement("p");
-            p00.className = "Entry_Text";
+            p01.className = "Entry_Text";
             p01.innerText = keys[j];
             div00.appendChild(p01);
 
             let p02 = document.createElement("p");
-            p00.className = "Entry_Text";
-            p02.id = "figure_" + i + "_" + keys[j] + "_vector";
+            p02.className = "Entry_Text";
+            p02.id = `figure_${i}_${keys[j]}_vector`;
             p02.innerText = "(" + values[j].toString() + ")";
             div00.appendChild(p02);
 
@@ -572,19 +581,19 @@ function displayFigureData() {
             `font-family: Arial, Helvetica, sans-serif;
             font-size: 20px;
             color: white;
-            margin: 5px 15px 5px 10px;}`;
+            margin: 5px 15px 5px 10px;`;
 
             p01.style =
             `font-family: Arial, Helvetica, sans-serif;
             font-size: 20px;
             color: white;
-            margin: 5px 15px 5px 10px;}`;
+            margin: 5px 15px 5px 10px;`;
 
             p02.style =
             `font-family: Arial, Helvetica, sans-serif;
             font-size: 20px;
             color: white;
-            margin: 5px 15px 5px 10px;}`;
+            margin: 5px 15px 5px 10px;`;
 
             // Make the first entry orange at the beginning.
             if (i == 0 && j == 0) {
@@ -627,7 +636,7 @@ function displayFigureData() {
                 p01.style.color = "#f19224";
                 p02.style.color = "#f19224";
             
-                setCursor(i, keys[i]);
+                setCursor(i, keys[j]);
             });
         }
     }
@@ -639,23 +648,23 @@ function displayFigureData() {
  * Function to add to the list of entries in settings_section the data of the last figure.
  */
 function displayLatestFigureData() {
-    let index = pair.figures.length-1;
+    let latestIndex = pair.figures.length-1;
     const parent = document.getElementById("settings_section");
     const last = document.getElementById("figure_add_remove_buttons");
 
-    const figure = pair.figures[index];
+    const figure = pair.figures[latestIndex];
     const keys = Object.keys(figure);
     const values = Object.values(figure);
 
     for (let i = 0; i < keys.length; i++) {
         let div00 = document.createElement("div");
         div00.className = "Landmarks_Entry";
-        div00.id = "figure_" + index + "_" + keys[i] + "_entry";
+        div00.id = "figure_" + latestIndex + "_" + keys[i] + "_entry";
         parent.insertBefore(div00, last); 
 
         let p00 = document.createElement("p");
         p00.className = "Entry_Text";
-        p00.innerText = "Figure " + index;
+        p00.innerText = "Figure " + latestIndex;
         div00.appendChild(p00);
 
         let p01 = document.createElement("p");
@@ -665,7 +674,7 @@ function displayLatestFigureData() {
 
         let p02 = document.createElement("p");
         p00.className = "Entry_Text";
-        p02.id = keys[i] + "_vector";
+        p02.id = `figure_${latestIndex}_${keys[i]}_vector`;
         p02.innerText = "(" + values[i].toString() + ")";
         div00.appendChild(p02);
 
@@ -682,19 +691,19 @@ function displayLatestFigureData() {
         `font-family: Arial, Helvetica, sans-serif;
         font-size: 20px;
         color: white;
-        margin: 5px 15px 5px 10px;}`;
+        margin: 5px 15px 5px 10px;`;
 
         p01.style =
         `font-family: Arial, Helvetica, sans-serif;
         font-size: 20px;
         color: white;
-        margin: 5px 15px 5px 10px;}`;
+        margin: 5px 15px 5px 10px;`;
 
         p02.style =
         `font-family: Arial, Helvetica, sans-serif;
         font-size: 20px;
         color: white;
-        margin: 5px 15px 5px 10px;}`;
+        margin: 5px 15px 5px 10px;`;
 
         div00.addEventListener("mouseover", () => {
             div00.style.borderColor = "#f19224"
@@ -726,7 +735,7 @@ function displayLatestFigureData() {
             p01.style.color = "#f19224";
             p02.style.color = "#f19224";
 
-            setCursor(index, keys[i]);
+            setCursor(latestIndex, keys[i]);
         });
     }
 
@@ -749,26 +758,33 @@ function renderFigure() {
     const img_element = document.getElementById("img_reference");
     const canv_element = document.getElementById("openpose_canvas");
     const context = canv_element.getContext("2d");
- 
-    // Clean previous canvis, for which past scale is needed.
-    context.clearRect(0, 0, canv_width, canv_height);
 
-    canv_element.style.top = img_element.offsetTop;
-    canv_element.style.left = img_element.offsetLeft;
-    canv_element.style.height = pair.image.height;
-    canv_element.style.width = pair.image.width;
+    // Canvas height/width is not the same as style.height/width. The former changes the resolution while the latter only its size, leading to warping.
+    // Resizing canvas wipes previous content also.
+    canv_element.height = pair.image.height;
+    canv_element.width = pair.image.width;
+    canv_element.style.top = `${img_element.offsetTop}px`;
+    canv_element.style.left = `${img_element.offsetLeft}px`;
+
+    // Clean previous canvas which may be necessary if the size remained the same.
+    context.clearRect(0, 0, canv_width, canv_height);
 
     // Update new canvis scale.
     canv_height = pair.image.height;
     canv_width = pair.image.width;
 
-    for (let figure in pair.figures) {
-        for (let element in render_order) {
+    for (let i = 0; i < pair.figures.length; i++) {
+
+        const figure = pair.figures[i];
+
+        for (let j = 0; j < render_order.length; j++) {
+
+            const element = render_order[j];
 
             if (element.includes("-")) {
                 let [kp1, kp2] = openepose_relations.get(element);
 
-                if (figure[kp1][2] < MIN_CONFIDENCE || figure[kp2][2 < MIN_CONFIDENCE]) {
+                if (figure[kp1][2] < MIN_CONFIDENCE || figure[kp2][2] < MIN_CONFIDENCE) {
                     continue;
                 }
 
