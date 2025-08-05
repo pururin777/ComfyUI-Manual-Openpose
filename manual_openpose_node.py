@@ -28,7 +28,7 @@ class ManualOpenposeNode:
     def INPUT_TYPES(cls):
         data_in = {
             "required": {
-                "image_batch": ("IMAGE", {"forceInputAsList": True}),
+                "images": ("IMAGE", {"forceInputAsList": True}),
             }
         }
 
@@ -216,9 +216,9 @@ class ManualOpenposeNode:
     '''
     # Main function of the node that is called when the node is reached in ComfyUI.
     # Takes in a batch of images and allows to manually create Openpose images for each of them.
-    # @param {IMAGE*} ref_imgs - Batch of images the node received as input.
+    # @param {IMAGE*} images - Batch of images the node received as input.
     '''
-    def manual_openpose_main(self, ref_imgs):
+    def manual_openpose_main(self, images):
         global truples
         global current_index
         global signal
@@ -228,7 +228,7 @@ class ManualOpenposeNode:
         ManualOpenposeNode.initialize()
 
         # Initialize truples and then turn their figures into a JSON string to be sent.
-        truples = ManualOpenposeNode.prepareTruples(truples, ref_imgs)
+        truples = ManualOpenposeNode.prepareTruples(truples, images)
         truples = ManualOpenposeNode.convertAllDictToJSON(truples)
 
         total_imgs = len(truples)
@@ -258,4 +258,4 @@ class ManualOpenposeNode:
 
         PromptServer.instance.send_sync("terminate-frontend")
 
-        return (ref_imgs, op_imgs)
+        return (images, op_imgs)
