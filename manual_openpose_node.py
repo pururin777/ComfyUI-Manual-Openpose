@@ -85,7 +85,8 @@ class ManualOpenposeNode:
         figure = ManualOpenposeNode.convertToJSON(OPENPOSE_KEYPOINTS)
 
         for img in ref_imgs:
-            truples.append([img, [figure,], []])
+            pil_img = ManualOpenposeNode.tensor_to_pil(img)
+            truples.append([pil_img, [figure,], []])
 
         return truples
 
@@ -192,6 +193,17 @@ class ManualOpenposeNode:
         return truples
 
     '''
+    # Converts Tensor into PIL image.
+    # @param {Tensor} image_tensor - Image in a torch.Tensor format.
+    '''
+    @staticmethod
+    def tensor_to_pil(image_tensor):
+        image_np = image_tensor.cpu().numpy()
+        image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
+        image_np = np.transpose(image_np, (1, 2, 0))
+        return Image.fromarray(image_np)
+
+    '''
     # route for lifting the block on backend.
     '''
     @PromptServer.instance.routes.post("/free-block")
@@ -251,7 +263,7 @@ class ManualOpenposeNode:
 
         truples = ManualOpenposeNode.convertAllJSONToDict(truples)
 
-        for i in range(len(truples)-1):
+        for i in range(len(truples)):
             img_width, img_height = truples[i][0].size # PIL.Image dimensions is accessed with ".size".
             truples[i][2] = ManualOpenposeNode.prepareRenderPair(img_width, img_height, truples[i])
             op_imgs.append(ManualOpenposeNode.renderOpenposeImage(img_width, img_height, truples[i]))
