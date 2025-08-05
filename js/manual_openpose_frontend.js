@@ -1,8 +1,10 @@
 import { openepose_keypoints, openepose_relations, render_order, keypoint_colors, relation_colors } from "templates.js";
 
+import { api } from "../../scripts/api.js"
+
 // Global variables.
-const pair = {};
-const cursor = {};
+const pair = null;
+const cursor = null;
 let index = null;
 let total = null;
 // These global variables are necessary to clean a previous canvas whose scale will possibly change.
@@ -12,25 +14,37 @@ let canv_width = null;
 const MIN_CONFIDENCE = 0.05;
 const KEYPOINT_RADIUS = 9;
 const EDGE_THICKNESS = 7;
- 
-/**
- * Function that coordinates what happens in frontend.
- */
-function main() {
+
+// EventListener for signalling from backend.
+api.addEventListener("first-call", (event) => {
     initialize();
     drawAppWindow();
     drawIntermission();
     drawOpenposeEditor();
+    setTotal(event.detail.total_imgs);
+})
 
-    // [WIP]
-    // Waiting for backend message.
-    setTotal(totalImages);
-    updatePair(img, figures);
-    // Changing to OpenposeEditor after receiving all necessary data.
-    switchToOpenposeEditor();
+api.addEventListener("send-next-image", (event) => {
+    const encodedImage = event.detail.image_base64;
+    const figuresList = event.detail.sent_figures;
+    const blob = new Blob([Uint8Array.from(atob(encodedImage), c => c.charCodeAt(0))], { type: 'image/png' })
+    const url = URL.createObjectURL(blob)
+
+    updatePair(blob, figuresList);
+    insertImage(url);
+
+    if (document.getElementById("app_window").firstChild == document.getElementById("container_intermission")) {
+        switchToOpenposeEditor();
+    }
+
     displayFigureData();
+})
 
-}
+api.addEventListener("terminate-frontend", () => {
+    document.getElementById("app_window").remove();
+    document.getElementById("container_openpose").remove();
+    document.getElementById("container_intermission").remove();
+})
 
 /**
  * Whenever the frontend is called at the next generation, reset the values of the global variables.
@@ -45,9 +59,6 @@ function initialize() {
     canv_height = 1;
     canv_width = 1;
 }
-
-// [WIP] A function triggered by an evenListener which receives how many images there are in total and then assigns the value to total.
-// [WIP] A function triggered by an evenListener which receives figure data from backend and updates the pair object.
 
 /**
  * Function that lays out app_window which contains the transmission or openpose editor.
@@ -78,7 +89,7 @@ function drawAppWindow() {
 function drawIntermission() {
     const div00 = document.createElement("div");
     div00.className = "Container";
-    div00.id = "container_transmission";
+    div00.id = "container_intermission";
     document.getElementById("app_window").appendChild(div00);
 
     const p00 = document.createElement("p");
@@ -368,6 +379,49 @@ function drawOpenposeEditor() {
     node.style.justifyContent = "center";
     node.style.alignItems = "center";
 
+    node = document.getElementById("previous_button");
+    node.addEventListener("click", () => {
+        fetch("/free-block", { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                signal: -1,
+                figures: pair.figures
+            })
+        }).then(() => {
+            decrementIndex();
+        })
+    });
+
+    node = document.getElementById("send_all_button");
+    node.addEventListener("click", () => {
+        fetch("/free-block", { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                signal: 0,
+                figures: pair.figures
+            })
+        }).then(() => {
+            setIntermissionMessage("Generating Openpose images in backend...")
+            switchToIntermission();
+        })
+    });
+
+    node = document.getElementById("next_button");
+    node.addEventListener("click", () => {
+        fetch("/free-block", { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                signal: 1,
+                figures: pair.figures
+            })
+        }).then(() => {
+            decrementIndex();
+        })
+    });
+
     node = document.getElementById("figure_add_remove_buttons");
     node.style.display = "flex";
     node.style.flexDirection = "row";
@@ -456,18 +510,19 @@ function changeLandmarkEntry(figure_num, landmark, vector) {
     incrementCursor(entry);
 }
 
-// [WIP] Function that changes the content of the pair object to what has been sent to the frontend.
+/**
+ * Function to update global variable pair based on sent data from backend.
+ */
 function updatePair(receivedImg, receivedFigures) {
     const newFigures = [];
 
+    // Convert the figure list made up of JSON string into JS objects.
     for (let i = 0; i < newFigures.length; i++) {
         newFigures.push(JSON.parse(receivedFigures[i]));
     }
 
     pair.figures = newFigures;
-
-    // [WIP]
-    pair.img = newImg;
+    pair.img = receivedImg;
 }
 
 /**
@@ -681,10 +736,9 @@ function displayLatestFigureData() {
 /**
  * Function that inserts the recently received image.
  */
-function insertImage() {
-    // Depending on how this programatically works, delete the previous image to not burden the memory of the frontend.
-    // Must occur before the use of the renderFigure.
-    // Must update pair.i
+function insertImage(url) {
+    const imageElement = document.getElementById("img_reference");
+    imageElement.src = url;
 }
 
 /**

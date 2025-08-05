@@ -1,10 +1,23 @@
+from templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER
+
+from server import PromptServer
+from aiohttp import web
+
 import cv2
 import json
 import numpy as np
 
-from templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER
+from PIL import Image
+import base64
+import io
 
-# Global variables.
+from threading import Event
+
+current_index = 0
+truples = []
+signal = -1
+user_continue_event = Event()
+
 EDGE_THICKNESS = 2
 VERTEX_RADIUS = 4
 VERTEX_THICKNESS = -1
@@ -28,6 +41,19 @@ class ManualOpenposeNode:
     FUNCTION = "manual_openpose_main"
 
     CATEGORY = "Pururin777 Nodes"
+
+    '''
+    # Initialize these global variables whenever manual_openpose_main is called.
+    '''
+    @staticmethod
+    def initialize():
+        # Must use keyword global first, otherwise asignment will be treated as local.
+        global current_index
+        global truples
+        global signal
+        current_index = 0
+        truples = []
+        signal = -1
 
     '''
     # Converts a Python dictionary into a JSON formatted string.
@@ -166,43 +192,62 @@ class ManualOpenposeNode:
         return truples
 
     '''
+    # route for lifting the block on backend.
+    '''
+    @PromptServer.instance.routes.post("/free-block")
+    async def free_block(request):
+        global truples
+        global current_index
+        global signal
+
+        data = await request.json()
+        signal = data["signal"]
+        figures = data["figures"]
+
+        newFigures = []
+        for figure in figures:
+            ManualOpenposeNode.convertToJSON(figure)
+            newFigures.append(figure)
+        truples[current_index] = ManualOpenposeNode.updateTruple(truples[current_index], newFigures)
+        
+        user_continue_event.set()
+        return web.json_response({"status": "ok"})
+
+    '''
     # Main function of the node that is called when the node is reached in ComfyUI.
     # Takes in a batch of images and allows to manually create Openpose images for each of them.
     # @param {IMAGE*} ref_imgs - Batch of images the node received as input.
     '''
     def manual_openpose_main(ref_imgs):
-        # Prepare the lists that you will need.
-        current_index = 0
-        truples = []
+        global truples
+        global current_index
+        global signal
+        buffer = io.BytesIO()
         op_imgs = []
+
+        ManualOpenposeNode.initialize()
 
         # Initialize truples and then turn their figures into a JSON string to be sent.
         truples = ManualOpenposeNode.prepareTruples(truples, ref_imgs)
         truples = ManualOpenposeNode.convertAllDictToJSON(truples)
 
-        '''
-        # Send total amount of images once.
         total_imgs = len(truples)
-        sendToFrontend(total_imgs)
+        PromptServer.instance.send_sync("first-call", {"message": total_imgs})
 
-        # This should be a do-while loop
-        sendToFrontend(truples[current_index][0], truples[current_index][1])
+        user_continue_event.clear()
 
-        # Waiting for signal (Previous: -1, Send All: 0, Next: 1)
-            figures, signal = receiveFromFrontend()
+        while signal != 0:
+            img = truples[current_index][0]
+            img.save(buffer, format="PNG")
+            encoded_img = base64.b64encode(buffer.getvalue()).decode("utf-8")
+            
+            PromptServer.instance.send_sync("send-next-image", {"image_base64": encoded_img, "sent_figures": truples[current_index][1]})
+            user_continue_event.wait()
 
-            # Update truple
-            truple[currentIndex] = ManualOpenposeNode.updateTruple(truples[currentIndex], figures)
-
-            switch signal {
-            case -1:
-                current_index--
-            case 0:
-                break
-            case 1:
-                current_index++
-            }
-        '''
+            if signal == 1:
+                current_index += signal
+            elif signal == -1:
+                current_index += signal
 
         truples = ManualOpenposeNode.convertAllJSONToDict(truples)
 
@@ -211,5 +256,7 @@ class ManualOpenposeNode:
             img_height = truples[i][0].getHeight() # Just a placeholder. Find the appropriate function.
             truples[2] = ManualOpenposeNode.prepareRenderPair(img_width, img_height, truples[i])
             op_imgs.append(ManualOpenposeNode.renderOpenposeImage(img_width, img_height, truples[i]))
+
+        PromptServer.instance.send_sync("terminate-frontend")
 
         return (ref_imgs, op_imgs)
