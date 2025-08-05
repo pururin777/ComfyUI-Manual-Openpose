@@ -125,14 +125,15 @@ class ManualOpenposeNode:
         # Go through all the figures that exist.
         for i in range(0, len(truple[1])):
             truple[2].append(RENDER_ORDER.copy())
+            figure = truple[1][i]
 
-            for key in truple[1][i]:
+            for key in figure:
                 # If the keypount is outside of the image or has too low confidence then remove it from the render order.
-                if key[0] >= width or key[1] >= height or key[2] < MIN_CONFIDENCE:
+                if figure[key][0] >= width or figure[key][1] >= height or figure[key][2] < MIN_CONFIDENCE:
                     # Go through render order and remove every entry of the figure in question with the useless keypoint or edge.
                     for entry in truple[2][i]:
                         if key in entry:
-                            truple[2][i].remove(entry)
+                            truple[2][i].pop(entry)
         
         return truple[2]
 
@@ -198,26 +199,40 @@ class ManualOpenposeNode:
     '''
     @staticmethod
     def tensor_to_pil(image_tensor):
-        print(f"tensor type: {type(image_tensor)}, shape: {getattr(image_tensor, 'shape', None)}")
-        image_np = image_tensor.cpu().numpy()  # shape: [C, H, W]
+        # Ensure it's a NumPy array
+        if isinstance(image_tensor, np.ndarray):
+            image_np = image_tensor
+        elif hasattr(image_tensor, "cpu"):
+            image_np = image_tensor.cpu().numpy()
+        else:
+            raise TypeError(f"Unsupported input type: {type(image_tensor)}")
 
-        if image_np.ndim != 3:
-            raise ValueError(f"Expected 3D tensor (C, H, W), got shape {image_np.shape}")
+        # Detect and correct shape
+        if image_np.ndim == 3:
+            h, w, c = image_np.shape
 
-        if image_np.shape[0] == 1:
-            # Grayscale: remove channel dimension
-            image_np = np.squeeze(image_np, axis=0)  # shape: [H, W]
+            if c in [1, 3]:
+                # Already HWC
+                image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
+                mode = "L" if c == 1 else "RGB"
+                return Image.fromarray(image_np, mode=mode)
+
+            elif h in [1, 3]:
+                # It's CHW, so transpose
+                image_np = np.transpose(image_np, (1, 2, 0))
+                image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
+                mode = "L" if image_np.shape[2] == 1 else "RGB"
+                return Image.fromarray(image_np, mode=mode)
+
+            else:
+                raise ValueError(f"Unrecognized 3D tensor shape: {image_np.shape}")
+
+        elif image_np.ndim == 2:
             image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
             return Image.fromarray(image_np, mode="L")
 
-        elif image_np.shape[0] == 3:
-            # RGB: transpose to HWC
-            image_np = np.transpose(image_np, (1, 2, 0))
-            image_np = np.clip(image_np * 255.0, 0, 255).astype(np.uint8)
-            return Image.fromarray(image_np)
-
         else:
-            raise ValueError(f"Unsupported number of channels: {image_np.shape[0]}")
+            raise ValueError(f"Unsupported image shape: {image_np.shape}")
 
     '''
     # route for lifting the block on backend.
@@ -247,6 +262,7 @@ class ManualOpenposeNode:
     # @param {IMAGE*} images - Batch of images the node received as input.
     '''
     def manual_openpose_main(self, images):
+
         global truples
         global current_index
         global signal
