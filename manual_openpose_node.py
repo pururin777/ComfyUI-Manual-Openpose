@@ -28,14 +28,14 @@ class ManualOpenposeNode:
     def INPUT_TYPES(cls):
         data_in = {
             "required": {
-                "image_batch": ("IMAGE*", {"forceInputAsList": True}),
+                "image_batch": ("IMAGE", {"forceInputAsList": True}),
             }
         }
 
         return data_in
     
     RETURN_NAMES = ("ref_imgs", "op_imgs")
-    RETURN_TYPES = ("IMAGE*", "IMAGE*")
+    RETURN_TYPES = ("IMAGE", "IMAGE")
     OUTPUT_IS_LIST = (True, True)
 
     FUNCTION = "manual_openpose_main"

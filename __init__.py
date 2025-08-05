@@ -13,4 +13,4 @@ except Exception as e:
     with open("/workspace/manual_openpose_import_error.log", "w") as f:
         f.write("=== Manual Openpose Node Import Error ===\n")
         traceback.print_exc(file=f)
-    raise  # Optional: re-raise if you want ComfyUI to still halt
+    raise
