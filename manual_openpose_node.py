@@ -198,6 +198,7 @@ class ManualOpenposeNode:
     '''
     @staticmethod
     def tensor_to_pil(image_tensor):
+        print(f"tensor type: {type(image_tensor)}, shape: {getattr(image_tensor, 'shape', None)}")
         image_np = image_tensor.cpu().numpy()  # shape: [C, H, W]
 
         if image_np.ndim != 3:
