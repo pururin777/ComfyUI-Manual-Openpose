@@ -218,7 +218,7 @@ class ManualOpenposeNode:
     # Takes in a batch of images and allows to manually create Openpose images for each of them.
     # @param {IMAGE*} ref_imgs - Batch of images the node received as input.
     '''
-    def manual_openpose_main(ref_imgs):
+    def manual_openpose_main(self, ref_imgs):
         global truples
         global current_index
         global signal
