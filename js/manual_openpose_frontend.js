@@ -120,10 +120,16 @@ function drawIntermission() {
  * Function that displays the transmission as opposed to the openpose editor.
  */
 function switchToIntermission() {
+    /**
     const parent = document.getElementById("app_window");
     const newChild = document.getElementById("container_intermission");
     const oldChild = document.getElementById("container_openpose");
     parent.replaceChild(newChild, oldChild);
+    */
+    const oldChild = document.getElementById("container_openpose");
+    const newChild = document.getElementById("container_intermission");
+    oldChild.style.display = "remove";
+    newChild.style.display = "inline";
 }
 
 /**
@@ -141,6 +147,8 @@ function drawOpenposeEditor() {
     const div00 = document.createElement("div");
     div00.className = "Container";
     div00.id = "container_openpose";
+    div00.appendChild.getElementById("app_window");
+    div00.style.display = "none";
 
     // Flex_Horizontal divs themselves are ordered vertically inside the Container div and differentiated with the ID flex_horizontal_1/2.
     // Horizontal_First is the horizontally ordered first div inside of a Flex_Horizontal div.
@@ -462,10 +470,16 @@ function drawOpenposeEditor() {
 }
 
 function switchToOpenposeEditor() {
+    /**
     const parent = document.getElementById("app_window");
     const newChild = document.getElementById("container_openpose");
     const oldChild = document.getElementById("container_intermission");
     parent.replaceChild(newChild, oldChild);
+    */
+    const oldChild = document.getElementById("container_intermission");
+    const newChild = document.getElementById("container_openpose");
+    oldChild.style.display = "remove";
+    newChild.style.display = "inline";
 }
 
 function setTotal(numberOfImages) {
