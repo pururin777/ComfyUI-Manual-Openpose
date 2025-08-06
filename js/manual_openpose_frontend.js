@@ -24,14 +24,15 @@ api.addEventListener("first-call", (event) => {
     drawOpenposeEditor();
     setTotal(event.detail.total_imgs);
     console.log("Reached the end of first-call.");
+    fetch("/free-first-call");
 })
 
 api.addEventListener("send-next-image", (event) => {
     console.log("Reached the start of send-next-image.");
     const encodedImage = event.detail.image_base64;
     const figuresList = event.detail.sent_figures;
-    const blob = new Blob([Uint8Array.from(atob(encodedImage), c => c.charCodeAt(0))], { type: 'image/png' })
-    const url = URL.createObjectURL(blob)
+    const blob = new Blob([Uint8Array.from(atob(encodedImage), c => c.charCodeAt(0))], { type: 'image/png' });
+    const url = URL.createObjectURL(blob);
 
     updatePair(blob, figuresList);
     insertImage(url);
@@ -402,7 +403,7 @@ function drawOpenposeEditor() {
             return;
         }
 
-        fetch("/free-block", { 
+        fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -416,7 +417,7 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("send_all_button");
     node.addEventListener("click", () => {
-        fetch("/free-block", { 
+        fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -435,7 +436,7 @@ function drawOpenposeEditor() {
             return;
         }
 
-        fetch("/free-block", { 
+        fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

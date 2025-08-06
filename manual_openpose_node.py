@@ -235,9 +235,17 @@ class ManualOpenposeNode:
             raise ValueError(f"Unsupported image shape: {image_np.shape}")
 
     '''
-    # route for lifting the block on backend.
+    # route for lifting the block on backend after first-call signal.
     '''
-    @PromptServer.instance.routes.post("/free-block")
+    @PromptServer.instance.routes.post("/free-first-call")
+    async def free_block(request):
+        user_continue_event.set()
+        return web.json_response({"status": "ok"})
+
+    '''
+    # route for lifting the block on backend after send-next-image signal.
+    '''
+    @PromptServer.instance.routes.post("/free-send-next-image")
     async def free_block(request):
         global truples
         global current_index
@@ -275,11 +283,11 @@ class ManualOpenposeNode:
         # Initialize truples and then turn their figures into a JSON string to be sent.
         truples = ManualOpenposeNode.prepareTruples(truples, images)
         truples = ManualOpenposeNode.convertAllDictToJSON(truples)
-
         total_imgs = len(truples)
-        PromptServer.instance.send_sync("first-call", {"message": total_imgs})
 
+        PromptServer.instance.send_sync("first-call", {"message": total_imgs})
         user_continue_event.clear()
+        user_continue_event.wait()
 
         while signal != 0:
             img = truples[current_index][0]
@@ -287,6 +295,7 @@ class ManualOpenposeNode:
             encoded_img = base64.b64encode(buffer.getvalue()).decode("utf-8")
             
             PromptServer.instance.send_sync("send-next-image", {"image_base64": encoded_img, "sent_figures": truples[current_index][1]})
+            user_continue_event.clear()
             user_continue_event.wait()
 
             if signal == 1:
