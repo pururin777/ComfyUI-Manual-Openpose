@@ -17,18 +17,15 @@ const EDGE_THICKNESS = 7;
 
 // EventListener for signalling from backend.
 api.addEventListener("first-call", (event) => {
-    console.log("Reached the start of first-call.");
     initialize();
     drawAppWindow();
     drawIntermission();
     drawOpenposeEditor();
     setTotal(event.detail.total_imgs);
-    console.log("Reached the end of first-call.");
-    fetch("/free-first-call");
+    fetch("/free-first-call", { method: "POST" });
 })
 
 api.addEventListener("send-next-image", (event) => {
-    console.log("Reached the start of send-next-image.");
     const encodedImage = event.detail.image_base64;
     const figuresList = event.detail.sent_figures;
     const blob = new Blob([Uint8Array.from(atob(encodedImage), c => c.charCodeAt(0))], { type: 'image/png' });
@@ -38,12 +35,10 @@ api.addEventListener("send-next-image", (event) => {
     insertImage(url);
 
     if (document.getElementById("app_window").firstChild == document.getElementById("container_intermission")) {
-        console.log("Reached inside equivalent checker.");
         switchToOpenposeEditor();
     }
 
     displayFigureData();
-    console.log("Reached the end of send-next-image.");
 })
 
 api.addEventListener("terminate-frontend", () => {
@@ -76,15 +71,15 @@ function drawAppWindow() {
     document.body.appendChild(div00);
 
     // ID related style modification.
-    let appWindowHeight = screen.availHeight * 0.8;
-    let appWindowWidth = screen.availWidth * 0.8;
+    let appWindowHeight = screen.availHeight * 0.7;
+    let appWindowWidth = screen.availWidth * 0.7;
 
     div00.style =
     `height: ${appWindowHeight}px;
     width: ${appWindowWidth}px;
     position: fixed;
-    left: 10%;
-    top: 5%;
+    left: 15%;
+    top: 10%;
     border-radius: 5px;
     background-color: #575555;`;
 }
@@ -105,7 +100,12 @@ function drawIntermission() {
     div00.appendChild(p00);
 
     div00.style =
-    `display: flex;
+    `height: 94%;
+    width: 95%;
+    position: relative;
+    left: 2.5%;
+    top: 3%;
+    display: flex;
     justify-content: center;
     align-items: center;`;
 
@@ -120,16 +120,10 @@ function drawIntermission() {
  * Function that displays the transmission as opposed to the openpose editor.
  */
 function switchToIntermission() {
-    /**
-    const parent = document.getElementById("app_window");
-    const newChild = document.getElementById("container_intermission");
-    const oldChild = document.getElementById("container_openpose");
-    parent.replaceChild(newChild, oldChild);
-    */
     const oldChild = document.getElementById("container_openpose");
     const newChild = document.getElementById("container_intermission");
-    oldChild.style.display = "remove";
-    newChild.style.display = "inline";
+    oldChild.style.display = "none";
+    newChild.style.display = "flex";
 }
 
 /**
@@ -147,8 +141,8 @@ function drawOpenposeEditor() {
     const div00 = document.createElement("div");
     div00.className = "Container";
     div00.id = "container_openpose";
-    div00.appendChild.getElementById("app_window");
-    div00.style.display = "none";
+    // To access properties of elements the element in question needs to be appended to the document to be able to get its ID.
+    document.getElementById("app_window").appendChild(div00);
 
     // Flex_Horizontal divs themselves are ordered vertically inside the Container div and differentiated with the ID flex_horizontal_1/2.
     // Horizontal_First is the horizontally ordered first div inside of a Flex_Horizontal div.
@@ -230,7 +224,7 @@ function drawOpenposeEditor() {
 
     const div10 = document.createElement("div");
     div10.id = "figure_add_remove_buttons";
-    div10.appendChild(div03);
+    div03.appendChild(div10);
 
     const div11 = document.createElement("div");
     div11.className = "Figure_Button";
@@ -250,20 +244,10 @@ function drawOpenposeEditor() {
     const p07 = document.createElement("p");
     p07.className = "Arial15";
     p07.innerText = "Remove Figure";
-    div11.appendChild(p07);
+    div12.appendChild(p07);
 
     // Class related style modification.
-    let nodeList = document.querySelectorAll("div.Container");
-    for (let i = 0; i < nodeList.length; i++) {
-        nodeList[i].style =
-        `height: 94%;
-        width: 95%;
-        position: relative;
-        left: 2.5%;
-        top: 3%;`;
-    }
-
-    nodeList = document.querySelectorAll("div.Flex_Horizontal");
+    let nodeList = document.querySelectorAll("div.Flex_Horizontal");
     for (let i = 0; i < nodeList.length; i++) {
         nodeList[i].style =
         `display: flex;
@@ -354,10 +338,14 @@ function drawOpenposeEditor() {
 
     // ID related style modification.
     let node = document.getElementById("container_openpose");
-    node.style.display = "flex";
-    node.style.flexDirection = "column";
-    node.style.flexShrink = "0";
-    node.style.overflow = "hidden";
+    node.style =
+    `display: none;
+    height: 94%;
+    width: 95%;
+    position: relative;
+    left: 2.5%;
+    top: 3%;
+    `
 
     node = document.getElementById("flex_horizontal_1");
     node.style.height = "90%";
@@ -470,16 +458,14 @@ function drawOpenposeEditor() {
 }
 
 function switchToOpenposeEditor() {
-    /**
-    const parent = document.getElementById("app_window");
-    const newChild = document.getElementById("container_openpose");
-    const oldChild = document.getElementById("container_intermission");
-    parent.replaceChild(newChild, oldChild);
-    */
     const oldChild = document.getElementById("container_intermission");
     const newChild = document.getElementById("container_openpose");
-    oldChild.style.display = "remove";
-    newChild.style.display = "inline";
+    oldChild.style.display = "none";
+    newChild.style =
+    `display: "flex";
+    flex-direction: "column";
+    flex-shrink: "0";
+    overflow: "hidden";`
 }
 
 function setTotal(numberOfImages) {
@@ -574,6 +560,7 @@ function displayFigureData() {
 
     for (let i = 0; i < pair.figures.length; i++) {
         let figure = pair.figures[i];
+        console.log("Figure at index", i, figure);
         let keys = Object.keys(figure); // Alternatively, the Openpose figure template would have been appropriate here as well.
         let values = Object.values(figure);
 

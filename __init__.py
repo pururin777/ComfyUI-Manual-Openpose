@@ -1,17 +1,9 @@
-try:
-    # . signifies relative path. Otherwise file will be looked for in global path.
-    from .manual_openpose_node import ManualOpenposeNode
+# . signifies relative path. Otherwise file will be looked for in global path.
+from .manual_openpose_node import ManualOpenposeNode
 
-    NODE_CLASS_MAPPINGS = {"Manual Openpose Setter": ManualOpenposeNode}
+NODE_CLASS_MAPPINGS = {"Manual Openpose Setter": ManualOpenposeNode}
 
-    # Registering the JS files for the browser to be aware of.
-    WEB_DIRECTORY = "./js"
+# Registering the JS files for the browser to be aware of.
+WEB_DIRECTORY = "./js"
 
-    __all__ = ['NODE_CLASS_MAPPINGS', 'WEB_DIRECTORY']
-
-except Exception as e:
-    import traceback
-    with open("/workspace/manual_openpose_import_error.log", "w") as f:
-        f.write("=== Manual Openpose Node Import Error ===\n")
-        traceback.print_exc(file=f)
-    raise
+__all__ = ['NODE_CLASS_MAPPINGS', 'WEB_DIRECTORY']

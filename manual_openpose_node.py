@@ -23,6 +23,37 @@ VERTEX_RADIUS = 4
 VERTEX_THICKNESS = -1
 MIN_CONFIDENCE = 0.05
 
+# @PromptServer.instance.routes.post must be outside of node class, otherwise it is a class method and the route will not be registered this way.
+'''
+# route for lifting the block on backend after first-call signal.
+'''
+@PromptServer.instance.routes.post("/free-first-call")
+async def free_first_call(request):
+    user_continue_event.set()
+    return web.json_response({"status": "ok"})
+
+'''
+# route for lifting the block on backend after send-next-image signal.
+'''
+@PromptServer.instance.routes.post("/free-send-next-image")
+async def free_send_next_image(request):
+    global truples
+    global current_index
+    global signal
+
+    data = await request.json()
+    signal = data["signal"]
+    figures = data["figures"]
+
+    newFigures = []
+    for figure in figures:
+        ManualOpenposeNode.convertToJSON(figure)
+        newFigures.append(figure)
+    truples[current_index] = ManualOpenposeNode.updateTruple(truples[current_index], newFigures)
+        
+    user_continue_event.set()
+    return web.json_response({"status": "ok"})
+
 class ManualOpenposeNode:
     @classmethod
     def INPUT_TYPES(cls):
@@ -82,7 +113,7 @@ class ManualOpenposeNode:
     '''
     @staticmethod
     def prepareTruples(truples, ref_imgs):
-        figure = ManualOpenposeNode.convertToJSON(OPENPOSE_KEYPOINTS)
+        figure = OPENPOSE_KEYPOINTS.copy()
 
         for img in ref_imgs:
             pil_img = ManualOpenposeNode.tensor_to_pil(img)
@@ -233,36 +264,6 @@ class ManualOpenposeNode:
 
         else:
             raise ValueError(f"Unsupported image shape: {image_np.shape}")
-
-    '''
-    # route for lifting the block on backend after first-call signal.
-    '''
-    @PromptServer.instance.routes.post("/free-first-call")
-    async def free_block(request):
-        user_continue_event.set()
-        return web.json_response({"status": "ok"})
-
-    '''
-    # route for lifting the block on backend after send-next-image signal.
-    '''
-    @PromptServer.instance.routes.post("/free-send-next-image")
-    async def free_block(request):
-        global truples
-        global current_index
-        global signal
-
-        data = await request.json()
-        signal = data["signal"]
-        figures = data["figures"]
-
-        newFigures = []
-        for figure in figures:
-            ManualOpenposeNode.convertToJSON(figure)
-            newFigures.append(figure)
-        truples[current_index] = ManualOpenposeNode.updateTruple(truples[current_index], newFigures)
-        
-        user_continue_event.set()
-        return web.json_response({"status": "ok"})
 
     '''
     # Main function of the node that is called when the node is reached in ComfyUI.
