@@ -1,4 +1,5 @@
 try:
+    # . signifies relative path. Otherwise file will be looked for in global path.
     from .manual_openpose_node import ManualOpenposeNode
 
     NODE_CLASS_MAPPINGS = {"Manual Openpose Setter": ManualOpenposeNode}

@@ -1,4 +1,4 @@
-import { openepose_keypoints, openepose_relations, render_order, keypoint_colors, relation_colors } from "templates.js";
+import { openpose_keypoints, openpose_relations, render_order, keypoint_colors, relation_colors } from "./templates.js"; // "./" must be added to signify relative path.
 
 import { api } from "../../scripts/api.js"
 
@@ -97,6 +97,17 @@ function drawIntermission() {
     p00.id = "intermission_text";
     p00.innerText = "Waiting to receive backend data..."
     div00.appendChild(p00);
+
+    div00.style =
+    `display: flex;
+    justify-content: center;
+    align-items: center;`;
+
+    p00.style =
+    `font-family: Arial, Helvetica, sans-serif;
+    font-size: 25px;
+    color: white;
+    margin: 0;`;
 }
 
 /**
@@ -460,7 +471,7 @@ function setTotal(numberOfImages) {
  */
 function addFigure() {
     // Use template to make a new JS object. Assigning the template directly wouldn't make a copy but assign the same reference to the samce object, which is the template.
-    const emptyFigure = Object.assign({}, openepose_keypoints);
+    const emptyFigure = Object.assign({}, openpose_keypoints);
     pair.figures.push(emptyFigure);
     // Insert landmark entries in the Openpose landmarks list.
     displayLatestFigureData();
@@ -474,7 +485,7 @@ function removeFigure() {
     children = document.querySelectorAll(`div[id^="figure_${index}"]`);
 
     if (pair.figures.length == 1) {
-        const emptyFigure = Object.assign({}, openepose_keypoints);
+        const emptyFigure = Object.assign({}, openpose_keypoints);
         pair.figures[0] = emptyFigure;
 
         for (let child of children) {
@@ -782,7 +793,7 @@ function renderFigure() {
             const element = render_order[j];
 
             if (element.includes("-")) {
-                let [kp1, kp2] = openepose_relations.get(element);
+                let [kp1, kp2] = openpose_relations.get(element);
 
                 if (figure[kp1][2] < MIN_CONFIDENCE || figure[kp2][2] < MIN_CONFIDENCE) {
                     continue;

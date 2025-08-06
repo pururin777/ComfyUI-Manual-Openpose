@@ -1,4 +1,4 @@
-export const openepose_keypoints = {
+export const openpose_keypoints = {
     nose: [0,0,0],
     r_eye: [0,0,0],
     r_ear: [0,0,0],
