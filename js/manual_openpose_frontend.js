@@ -17,17 +17,17 @@ const EDGE_THICKNESS = 7;
 
 // EventListener for signalling from backend.
 api.addEventListener("first-call", (event) => {
-    print("Reached the start of first-call.");
+    console.log("Reached the start of first-call.");
     initialize();
     drawAppWindow();
     drawIntermission();
     drawOpenposeEditor();
     setTotal(event.detail.total_imgs);
-    print("Reached the end of first-call.");
+    console.log("Reached the end of first-call.");
 })
 
 api.addEventListener("send-next-image", (event) => {
-    print("Reached the start of send-next-image.");
+    console.log("Reached the start of send-next-image.");
     const encodedImage = event.detail.image_base64;
     const figuresList = event.detail.sent_figures;
     const blob = new Blob([Uint8Array.from(atob(encodedImage), c => c.charCodeAt(0))], { type: 'image/png' })
@@ -37,12 +37,12 @@ api.addEventListener("send-next-image", (event) => {
     insertImage(url);
 
     if (document.getElementById("app_window").firstChild == document.getElementById("container_intermission")) {
-        print("Reached inside equivalent checker.");
+        console.log("Reached inside equivalent checker.");
         switchToOpenposeEditor();
     }
 
     displayFigureData();
-    print("Reached the end of send-next-image.");
+    console.log("Reached the end of send-next-image.");
 })
 
 api.addEventListener("terminate-frontend", () => {
