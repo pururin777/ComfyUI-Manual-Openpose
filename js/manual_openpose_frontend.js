@@ -881,3 +881,10 @@ function decrementIndex() {
     index--;
     document.getElementById("image_counter").innerText = `This is image ${index+1} out of ${total}.`;
 }
+
+/**
+ *      >Problems to learn from.
+ * "Why did img_reference not adjust to its parent's size based on percentage based height and width and instead was displayed at its full size?"
+ * Because the image was inserted while its parent was not displayed (display: none). Without the parent having been drawn there is no size to refer to
+ * based on which the images scale could have been adjusted to.
+ */
