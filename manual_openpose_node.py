@@ -286,7 +286,7 @@ class ManualOpenposeNode:
         truples = ManualOpenposeNode.convertAllDictToJSON(truples)
         total_imgs = len(truples)
 
-        PromptServer.instance.send_sync("first-call", {"message": total_imgs})
+        PromptServer.instance.send_sync("first-call", {"total_number": total_imgs})
         user_continue_event.clear()
         user_continue_event.wait()
 

@@ -17,11 +17,10 @@ const EDGE_THICKNESS = 7;
 
 // EventListener for signalling from backend.
 api.addEventListener("first-call", (event) => {
-    initialize();
+    initialize(event.detail.total_number);
     drawAppWindow();
     drawIntermission();
     drawOpenposeEditor();
-    setTotal(event.detail.total_imgs);
     fetch("/free-first-call", { method: "POST" });
 })
 
@@ -50,13 +49,13 @@ api.addEventListener("terminate-frontend", () => {
 /**
  * Whenever the frontend is called at the next generation, reset the values of the global variables.
  */
-function initialize() {
+function initialize(receivedTotal) {
     pair.image = null;
     pair.figures = [];
     cursor.figure = 0;
     cursor.key = "nose";
     index = 0;
-    total = 0;
+    total = receivedTotal;
     canv_height = 1;
     canv_width = 1;
 }
@@ -184,7 +183,7 @@ function drawOpenposeEditor() {
     const p02 = document.createElement("p");
     p02.className = "Arial25";
     p02.id = "image_counter";
-    p02.innerText = `This is image ${index+1} out of ${total}.`;
+    p02.innerText = `This is image ${index+1} out of ${total}.`; // This will not dynamically change, just because you set a variable.
     div05.appendChild(p02);
 
     const div06 = document.createElement("div");
@@ -213,7 +212,7 @@ function drawOpenposeEditor() {
     div08.appendChild(p04);
 
     const div09 = document.createElement("div");
-    div09.className = "Figure_Button";
+    div09.className = "Control_Button";
     div09.id = "next_button";
     div06.appendChild(div09);
 
@@ -246,7 +245,6 @@ function drawOpenposeEditor() {
     p07.innerText = "Remove Figure";
     div12.appendChild(p07);
 
-    // Class related style modification.
     let nodeList = document.querySelectorAll("div.Flex_Horizontal");
     for (let i = 0; i < nodeList.length; i++) {
         nodeList[i].style =
@@ -336,7 +334,6 @@ function drawOpenposeEditor() {
         color: white;`;
     }
 
-    // ID related style modification.
     let node = document.getElementById("container_openpose");
     node.style =
     `display: none;
@@ -348,6 +345,9 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("flex_horizontal_1");
     node.style.height = "90%";
+
+    node = document.getElementById("flex_horizontal_2");
+    node.style.height = "10%";
 
     node = document.getElementById("img_reference");
     node.style =
@@ -384,13 +384,17 @@ function drawOpenposeEditor() {
     node.style.overflowY = "scroll";
     node.style.alignItems = "center";
 
-    node = document.getElementById("flex_horizontal_2");
-    node.style.height = "10%";
-
     node = document.getElementById("img_counter_section");
     node.style.display = "flex";
     node.style.justifyContent = "center";
     node.style.alignItems = "center";
+
+    node = document.getElementById("cont_button_section");
+    node.style =
+    `display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;`;
 
     node = document.getElementById("previous_button");
     node.addEventListener("click", () => {
@@ -464,10 +468,6 @@ function switchToOpenposeEditor() {
     newChild.style.flexDirection = "column";
     newChild.style.flexShrink = "0";
     newChild.style.overflow = "hidden";
-}
-
-function setTotal(numberOfImages) {
-    total = numberOfImages;
 }
 
 /**
@@ -639,11 +639,11 @@ function displayFigureData() {
                 const entry_frames = document.getElementsByClassName("Landmarks_Entry");
                 const paragraphs = document.getElementsByClassName("Entry_Text");
 
-                for (let entry_frame in entry_frames) {
+                for (let entry_frame of entry_frames) {
                     entry_frame.style.borderColor = "#acacac";
                 }
 
-                for (let paragraph in paragraphs) {
+                for (let paragraph of paragraphs) {
                     paragraph.style.color = "#acacac";
                 }
 
@@ -738,11 +738,11 @@ function displayLatestFigureData() {
             const entry_frames = document.getElementsByClassName("Landmarks_Entry");
             const paragraphs = document.getElementsByClassName("Entry_Text");
 
-            for (let entry_frame in entry_frames) {
+            for (let entry_frame of entry_frames) {
                 entry_frame.style.borderColor = "#acacac";
             }
 
-            for (let paragraph in paragraphs) {
+            for (let paragraph of paragraphs) {
                 paragraph.style.color = "#acacac";
             }
 
@@ -882,7 +882,7 @@ function decrementIndex() {
 
 /**
  *      >Problems to learn from.
- * "Why did img_reference not adjust to its parent's size based on percentage based height and width and instead was displayed at its full size?"
- * Because the image was inserted while its parent was not displayed (display: none). Without the parent having been drawn there is no size to refer to
- * based on which the images scale could have been adjusted to.
+ * When creating HTML elements and setting their style via JS it becomes important to pay attention to when something
+ * is set in terms of parent-children relation. If the child has a property that relates to the parent (e.g. percentage based sizes)
+ * then the parent needs to be set first.
  */
