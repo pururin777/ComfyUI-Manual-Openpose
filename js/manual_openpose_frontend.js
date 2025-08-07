@@ -344,8 +344,7 @@ function drawOpenposeEditor() {
     width: 95%;
     position: relative;
     left: 2.5%;
-    top: 3%;
-    `
+    top: 3%;`;
 
     node = document.getElementById("flex_horizontal_1");
     node.style.height = "90%";
@@ -363,8 +362,8 @@ function drawOpenposeEditor() {
 
     node.addEventListener("click", event => {
         let rect = node.getBoundingClientRect();
-        let x_pos = event.clientX - rect.left;
-        let y_pos = event.clientY - rect.top;
+        let x_pos = Math.round(event.clientX - rect.left);
+        let y_pos = Math.round(event.clientY - rect.top);
 
         changeLandmarkEntry(cursor.figure, cursor.key, [x_pos, y_pos, 0.95]);
     });
@@ -440,7 +439,7 @@ function drawOpenposeEditor() {
                 figures: pair.figures
             })
         }).then(() => {
-            decrementIndex();
+            incrementIndex();
         })
     });
 
@@ -456,16 +455,15 @@ function drawOpenposeEditor() {
     node = document.getElementById("remove_figure_button");
     node.addEventListener("click", removeFigure);
 }
-
+// [NOTE] Switch überschreibt style und hinterlässt diesen ohne die Größen
 function switchToOpenposeEditor() {
     const oldChild = document.getElementById("container_intermission");
     const newChild = document.getElementById("container_openpose");
     oldChild.style.display = "none";
-    newChild.style =
-    `display: "flex";
-    flex-direction: "column";
-    flex-shrink: "0";
-    overflow: "hidden";`
+    newChild.style.display = "flex";
+    newChild.style.flexDirection = "column";
+    newChild.style.flexShrink = "0";
+    newChild.style.overflow = "hidden";
 }
 
 function setTotal(numberOfImages) {
