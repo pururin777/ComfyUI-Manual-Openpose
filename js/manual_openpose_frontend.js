@@ -31,12 +31,8 @@ api.addEventListener("send-next-image", (event) => {
     const url = URL.createObjectURL(blob);
 
     updatePair(blob, figuresList);
+    switchToOpenposeEditor();
     insertImage(url);
-
-    if (document.getElementById("app_window").firstChild == document.getElementById("container_intermission")) {
-        switchToOpenposeEditor();
-    }
-
     displayFigureData();
 })
 
@@ -80,7 +76,7 @@ function drawAppWindow() {
     left: 15%;
     top: 10%;
     border-radius: 5px;
-    background-color: #575555;`;
+    background-color: #3F3938;`;
 }
 
 /**
@@ -349,6 +345,9 @@ function drawOpenposeEditor() {
     node = document.getElementById("flex_horizontal_2");
     node.style.height = "10%";
 
+    node = document.getElementById("input_img_section");
+    node.style.position = "relative";
+
     node = document.getElementById("img_reference");
     node.style =
     `max-height: 100%;
@@ -359,14 +358,6 @@ function drawOpenposeEditor() {
     display: block;
     margin: auto;
     cursor: pointer;`;
-
-    node.addEventListener("click", event => {
-        let rect = node.getBoundingClientRect();
-        let x_pos = Math.round(event.clientX - rect.left);
-        let y_pos = Math.round(event.clientY - rect.top);
-
-        changeLandmarkEntry(cursor.figure, cursor.key, [x_pos, y_pos, 0.95]);
-    });
 
     node = document.getElementById("openpose_canvas");
     node.style.position = "absolute";
@@ -401,7 +392,8 @@ function drawOpenposeEditor() {
         if (index == 0) {
             return;
         }
-
+        setIntermissionMessage("Receiving previous image...");
+        switchToIntermission();
         fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -416,6 +408,8 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("send_all_button");
     node.addEventListener("click", () => {
+        setIntermissionMessage("Generating Openpose images in backend...");
+        switchToIntermission();
         fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -423,10 +417,7 @@ function drawOpenposeEditor() {
                 signal: 0,
                 figures: pair.figures
             })
-        }).then(() => {
-            setIntermissionMessage("Generating Openpose images in backend...")
-            switchToIntermission();
-        })
+        });
     });
 
     node = document.getElementById("next_button");
@@ -434,7 +425,8 @@ function drawOpenposeEditor() {
         if (index == total-1) {
             return;
         }
-
+        setIntermissionMessage("Receiving next image...");
+        switchToIntermission();
         fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -448,6 +440,7 @@ function drawOpenposeEditor() {
     });
 
     node = document.getElementById("figure_add_remove_buttons");
+    node.style.margin = "0px 10px";
     node.style.display = "flex";
     node.style.flexDirection = "row";
     node.style.justifyContent = "center";
@@ -558,7 +551,6 @@ function displayFigureData() {
 
     for (let i = 0; i < pair.figures.length; i++) {
         let figure = pair.figures[i];
-        console.log("Figure at index", i, figure);
         let keys = Object.keys(figure); // Alternatively, the Openpose figure template would have been appropriate here as well.
         let values = Object.values(figure);
 
@@ -588,6 +580,7 @@ function displayFigureData() {
             `width: 99%;
             border: 1px solid #acacac;
             margin: 5px 0px 0px 0px;
+            cursor: pointer;
             display: flex;
             flex-direction: row;
             flex-shrink: 0;
@@ -644,7 +637,7 @@ function displayFigureData() {
                 }
 
                 for (let paragraph of paragraphs) {
-                    paragraph.style.color = "#acacac";
+                    paragraph.style.color = "white";
                 }
 
                 div00.style.borderColor = "#f19224";
@@ -698,6 +691,7 @@ function displayLatestFigureData() {
         `width: 99%;
         border: 1px solid #acacac;
         margin: 5px 0px 0px 0px;
+        cursor: pointer;
         display: flex;
         flex-direction: row;
         flex-shrink: 0;
@@ -743,7 +737,7 @@ function displayLatestFigureData() {
             }
 
             for (let paragraph of paragraphs) {
-                paragraph.style.color = "#acacac";
+                paragraph.style.color = "white";
             }
 
             div00.style.borderColor = "#f19224";
@@ -764,6 +758,23 @@ function displayLatestFigureData() {
 function insertImage(url) {
     const imageElement = document.getElementById("img_reference");
     imageElement.src = url;
+
+    imageElement.addEventListener("click", trackCoordinates);
+}
+
+/**
+ * Function for the EventListener in case the image has been clicked to derive coordinates from.
+ */
+function trackCoordinates(event) {
+    const rect = this.getBoundingClientRect();
+    const img = document.getElementById("img_reference");
+    let x_scale = img.naturalWidth/img.clientWidth; // Coordinate must be rescaled to what the original image's size was.
+    let y_scale = img.naturalHeight/img.clientHeight;
+
+    let x_pos = Math.round((event.clientX - rect.left) * x_scale);
+    let y_pos = Math.round((event.clientY - rect.top) * y_scale);
+
+    changeLandmarkEntry(cursor.figure, cursor.key, [x_pos, y_pos, 0.95]);
 }
 
 /**
@@ -775,37 +786,44 @@ function renderFigure() {
     const canv_element = document.getElementById("openpose_canvas");
     const context = canv_element.getContext("2d");
 
-    // Canvas height/width is not the same as style.height/width. The former changes the resolution while the latter only its size, leading to warping.
-    // Resizing canvas wipes previous content also.
-    canv_element.height = pair.image.height;
-    canv_element.width = pair.image.width;
-    canv_element.style.top = `${img_element.offsetTop}px`;
-    canv_element.style.left = `${img_element.offsetLeft}px`;
-
     // Clean previous canvas which may be necessary if the size remained the same.
     context.clearRect(0, 0, canv_width, canv_height);
 
+    // Canvas height/width is not the same as style.height/width. The former changes the resolution while the latter only its size, leading to warping.
+    // Resizing canvas wipes previous content also.
+    canv_element.style.top = `${img_element.offsetTop}px`;
+    canv_element.style.left = `${img_element.offsetLeft}px`;
+    canv_element.style.height = `${img_element.clientHeight}px`;
+    canv_element.style.width = `${img_element.clientWidth}px`;
+    canv_element.height = img_element.clientHeight;
+    canv_element.width = img_element.clientWidth;
+
     // Update new canvis scale.
-    canv_height = pair.image.height;
-    canv_width = pair.image.width;
+    canv_height = img_element.clientHeight;
+    canv_width = img_element.clientWidth;
 
     for (let i = 0; i < pair.figures.length; i++) {
-
-        const figure = pair.figures[i];
+        console.log(`>>>FIGURE ITERATION: ${i}`);
+        let figure = pair.figures[i];
 
         for (let j = 0; j < render_order.length; j++) {
-
-            const element = render_order[j];
-
+            console.log(`>>RENDER ORDER ITERATIONS: ${j}`);
+            let element = render_order[j];
+            console.log(`Element: ${element}`);
             if (element.includes("-")) {
-                let [kp1, kp2] = openpose_relations.get(element);
 
+                let [kp1, kp2] = openpose_relations.get(element);
+                console.log(`Keypoint 1: ${kp1}`);
+                console.log(`Keypoint 2: ${kp2}`);
                 if (figure[kp1][2] < MIN_CONFIDENCE || figure[kp2][2] < MIN_CONFIDENCE) {
+                    console.log(`Skip was reached because of either ${kp1}: ${figure[kp1][2]} or ${kp2}: ${figure[kp2][2]}`);
                     continue;
                 }
 
                 let [red, green, blue] = relation_colors.get(element);
-
+                console.log(`Red: ${red}`);
+                console.log(`Green: ${green}`);
+                console.log(`Blue: ${blue}`);
                 context.beginPath();
                 context.moveTo(figure[kp1][0], figure[kp1][1]);
                 context.lineTo(figure[kp2][0], figure[kp2][1]);
@@ -815,11 +833,14 @@ function renderFigure() {
 
             } else {
                 if (figure[element][2] < MIN_CONFIDENCE) {
+                    console.log(`Skip was reached because of ${element}: ${figure[element][2]}`);
                     continue;
                 }
 
                 let [red, green, blue] = keypoint_colors.get(element);
-
+                console.log(`Red: ${red}`);
+                console.log(`Green: ${green}`);
+                console.log(`Blue: ${blue}`);
                 context.beginPath();
                 context.arc(figure[element][0], figure[element][1], KEYPOINT_RADIUS, 0, 2 * Math.PI);
                 context.fillStyle = `rgb(${red}, ${green}, ${blue})`;
@@ -842,7 +863,6 @@ function incrementCursor(entry) {
     if (nextSibling == lastChild) {
         return;
     }
-
     nextSibling.dispatchEvent(new Event('click'));
 }
 
