@@ -8,12 +8,12 @@ const cursor = { figure: 0, key: "nose" };
 let index = 0;
 let total = 0;
 // These global variables are necessary to clean a previous canvas whose scale will possibly change.
-let canv_height = 1;
-let canv_width = 1;
+let canv_height = 0;
+let canv_width = 0;
 
 const MIN_CONFIDENCE = 0.05;
-const KEYPOINT_RADIUS = 9;
-const EDGE_THICKNESS = 7;
+const KEYPOINT_RADIUS = 4;
+const EDGE_THICKNESS = 3;
 
 // EventListener for signalling from backend.
 api.addEventListener("first-call", (event) => {
@@ -52,8 +52,8 @@ function initialize(receivedTotal) {
     cursor.key = "nose";
     index = 0;
     total = receivedTotal;
-    canv_height = 1;
-    canv_width = 1;
+    canv_height = 0;
+    canv_width = 0;
 }
 
 /**
@@ -362,8 +362,6 @@ function drawOpenposeEditor() {
     node = document.getElementById("openpose_canvas");
     node.style.position = "absolute";
     node.style.pointerEvents = "none"; // So the canvas that is on top of the image definitely doesn't interfer.
-    node.style.height = "1px";
-    node.style.width = "1px";
 
     node = document.getElementById("settings_section");
     node.style.borderRadius = "4px";
@@ -486,6 +484,7 @@ function removeFigure() {
         pair.figures[0] = emptyFigure;
 
         for (let child of children) {
+            child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
 
@@ -498,6 +497,7 @@ function removeFigure() {
         pair.figures.pop();
         
         for (let child of children) {
+            child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
 
@@ -628,25 +628,7 @@ function displayFigureData() {
             });
 
             // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
-            div00.addEventListener("click", () => {
-                const entry_frames = document.getElementsByClassName("Landmarks_Entry");
-                const paragraphs = document.getElementsByClassName("Entry_Text");
-
-                for (let entry_frame of entry_frames) {
-                    entry_frame.style.borderColor = "#acacac";
-                }
-
-                for (let paragraph of paragraphs) {
-                    paragraph.style.color = "white";
-                }
-
-                div00.style.borderColor = "#f19224";
-                p00.style.color = "#f19224";
-                p01.style.color = "#f19224";
-                p02.style.color = "#f19224";
-            
-                setCursor(i, keys[j]);
-            });
+            div00.addEventListener("click", updateEntrySelection);
         }
     }
 
@@ -728,27 +710,47 @@ function displayLatestFigureData() {
         });
 
         // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
-        div00.addEventListener("click", () => {
-            const entry_frames = document.getElementsByClassName("Landmarks_Entry");
-            const paragraphs = document.getElementsByClassName("Entry_Text");
-
-            for (let entry_frame of entry_frames) {
-                entry_frame.style.borderColor = "#acacac";
-            }
-
-            for (let paragraph of paragraphs) {
-                paragraph.style.color = "white";
-            }
-
-            div00.style.borderColor = "#f19224";
-            p00.style.color = "#f19224";
-            p01.style.color = "#f19224";
-            p02.style.color = "#f19224";
-
-            setCursor(latestIndex, keys[i]);
-        });
+        div00.addEventListener("click", updateEntrySelection);
     }
 
+    renderFigure();
+}
+
+/**
+ * Function for the EventListener when someone clicks on an entry.
+ */
+function updateEntrySelection() {
+    const entry_frames = document.getElementsByClassName("Landmarks_Entry");
+    const paragraphs = document.getElementsByClassName("Entry_Text");
+
+    for (let entry_frame of entry_frames) {
+        entry_frame.style.borderColor = "#acacac";
+    }
+
+    for (let paragraph of paragraphs) {
+        paragraph.style.color = "white";
+    }
+    // Make the current entry highlit and place the cursor on it.
+    let figureIndex = null;
+    let landmark = null;
+
+    this.style.borderColor = "#f19224";
+
+    for (let i = 0; i < this.children.length; i++) {
+        this.children[i].style.color = "#f19224";
+
+        if (i == 0) {
+            figureIndex = Number(this.children[i].innerText.match("[0-9]+")[0]);
+        } else if (i == 1) {
+            landmark = this.children[i].innerText;
+        } else {
+            this.children[i].innerText = "(" + [0,0,0].toString() + ")";
+        }
+    }
+    
+    setCursor(figureIndex, landmark);
+    // The entry that has been selected should also be reset.
+    pair.figures[figureIndex][landmark] = [0,0,0];
     renderFigure();
 }
 
@@ -759,6 +761,7 @@ function insertImage(url) {
     const imageElement = document.getElementById("img_reference");
     imageElement.src = url;
 
+    imageElement.removeEventListener("click", trackCoordinates);
     imageElement.addEventListener("click", trackCoordinates);
 }
 
@@ -786,6 +789,9 @@ function renderFigure() {
     const canv_element = document.getElementById("openpose_canvas");
     const context = canv_element.getContext("2d");
 
+    let x_scale = img_element.clientWidth/img_element.naturalWidth; // Coordinate must be rescaled to the image's adjusted size now.
+    let y_scale = img_element.clientHeight/img_element.naturalHeight;
+
     // Clean previous canvas which may be necessary if the size remained the same.
     context.clearRect(0, 0, canv_width, canv_height);
 
@@ -803,46 +809,39 @@ function renderFigure() {
     canv_width = img_element.clientWidth;
 
     for (let i = 0; i < pair.figures.length; i++) {
-        console.log(`>>>FIGURE ITERATION: ${i}`);
+
         let figure = pair.figures[i];
 
         for (let j = 0; j < render_order.length; j++) {
-            console.log(`>>RENDER ORDER ITERATIONS: ${j}`);
+
             let element = render_order[j];
-            console.log(`Element: ${element}`);
+
             if (element.includes("-")) {
 
                 let [kp1, kp2] = openpose_relations.get(element);
-                console.log(`Keypoint 1: ${kp1}`);
-                console.log(`Keypoint 2: ${kp2}`);
+
                 if (figure[kp1][2] < MIN_CONFIDENCE || figure[kp2][2] < MIN_CONFIDENCE) {
-                    console.log(`Skip was reached because of either ${kp1}: ${figure[kp1][2]} or ${kp2}: ${figure[kp2][2]}`);
                     continue;
                 }
 
                 let [red, green, blue] = relation_colors.get(element);
-                console.log(`Red: ${red}`);
-                console.log(`Green: ${green}`);
-                console.log(`Blue: ${blue}`);
+
                 context.beginPath();
-                context.moveTo(figure[kp1][0], figure[kp1][1]);
-                context.lineTo(figure[kp2][0], figure[kp2][1]);
+                context.moveTo(figure[kp1][0] * x_scale, figure[kp1][1] * y_scale);
+                context.lineTo(figure[kp2][0] * x_scale, figure[kp2][1] * y_scale);
                 context.lineWidth = EDGE_THICKNESS;
                 context.strokeStyle = `rgb(${red}, ${green}, ${blue})`;
                 context.stroke();
 
             } else {
                 if (figure[element][2] < MIN_CONFIDENCE) {
-                    console.log(`Skip was reached because of ${element}: ${figure[element][2]}`);
                     continue;
                 }
 
                 let [red, green, blue] = keypoint_colors.get(element);
-                console.log(`Red: ${red}`);
-                console.log(`Green: ${green}`);
-                console.log(`Blue: ${blue}`);
+
                 context.beginPath();
-                context.arc(figure[element][0], figure[element][1], KEYPOINT_RADIUS, 0, 2 * Math.PI);
+                context.arc(figure[element][0] * x_scale, figure[element][1] * y_scale, KEYPOINT_RADIUS, 0, 2 * Math.PI);
                 context.fillStyle = `rgb(${red}, ${green}, ${blue})`;
                 context.fill();
 
@@ -857,13 +856,42 @@ function renderFigure() {
  */
 function incrementCursor(entry) {
     const nextSibling = entry.nextElementSibling;
-    const lastChild = document.getElementById("figure_add_remove_buttons");
+    const lastSibling = document.getElementById("figure_add_remove_buttons");
 
     // How to react if it was the last entry in the list.
-    if (nextSibling == lastChild) {
+    if (nextSibling == lastSibling) {
         return;
     }
-    nextSibling.dispatchEvent(new Event('click'));
+
+    // Default the appearance of all entries.
+    const entry_frames = document.getElementsByClassName("Landmarks_Entry");
+    const paragraphs = document.getElementsByClassName("Entry_Text");
+
+    for (let entry_frame of entry_frames) {
+        entry_frame.style.borderColor = "#acacac";
+    }
+
+    for (let paragraph of paragraphs) {
+        paragraph.style.color = "white";
+    }
+
+    // Make the current entry highlit and place the cursor on it.
+    let figureIndex = null;
+    let landmark = null;
+
+    nextSibling.style.borderColor = "#f19224";
+
+    for (let i = 0; i < nextSibling.children.length; i++) {
+        nextSibling.children[i].style.color = "#f19224";
+
+        if (i == 0) {
+            figureIndex = Number(nextSibling.children[i].innerText.match("[0-9]+")[0]);
+        } else if (i == 1) {
+            landmark = nextSibling.children[i].innerText;
+        }
+    }
+    
+    setCursor(figureIndex, landmark);
 }
 
 /**
