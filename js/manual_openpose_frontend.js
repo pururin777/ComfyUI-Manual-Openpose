@@ -140,8 +140,8 @@ function drawOpenposeEditor() {
     document.getElementById("app_window").appendChild(div00);
 
     // Flex_Horizontal divs themselves are ordered vertically inside the Container div and differentiated with the ID flex_horizontal_1/2.
-    // Horizontal_First is the horizontally ordered first div inside of a Flex_Horizontal div.
-    // Horizontal_Second in the horizontally ordered second div.
+    // Horizontal_First is the first horizontally ordered div inside of a Flex_Horizontal div.
+    // Horizontal_Second is the second horizontally ordered div.
 
     const div01 = document.createElement("div");
     div01.className = "Flex_Horizontal";
@@ -263,61 +263,71 @@ function drawOpenposeEditor() {
     nodeList = document.querySelectorAll("div.Control_Button");
     for (let i = 0; i < nodeList.length; i++) {
         nodeList[i].style =
-        `width: auto;
+        `width: fit-content;
         border: 3px solid #acacac;
         border-radius: 8px;
         margin: 0px 10px;
         padding: 5px;
         cursor: pointer;`;
 
-        nodeList[i].addEventListener("mouseover", () => {
-            nodeList[i].style.borderColor = "#f19224";
+        // nodeList[i] is a variable that will change across iterations while this instantiated variable exists within the scope
+        // of the iteration that created it.
+        const button = nodeList[i];
+
+        button.addEventListener("mouseover", () => {
+            button.style.borderColor = "#f19224";
         });
 
-        nodeList[i].addEventListener("mouseleave", () => {
-            nodeList[i].style.borderColor = "#acacac";
+        button.addEventListener("mouseleave", () => {
+            button.style.borderColor = "white";
         });
 
-        nodeList[i].addEventListener("click", () => {
-            nodeList[i].firstChild.style.color = "#f19224";
+        button.addEventListener("click", () => {
+            button.style.color = "#f19224";
         });
 
-        nodeList[i].addEventListener("mouseup", () => {
-            nodeList[i].firstChild.style.color = "#acacac";
+        button.addEventListener("mouseup", () => {
+            button.style.color = "white";
         });
+
     }
 
     nodeList = document.querySelectorAll("div.Figure_Button");
     for (let i = 0; i < nodeList.length; i++) {
         nodeList[i].style =
         `width: auto;
-        border: 3px solid #acacac;
+        border: 2px solid #acacac;
         border-radius: 8px;
         margin: 0px 10px;
         padding: 5px;
         cursor: pointer;`;
 
-        nodeList[i].addEventListener("mouseover", () => {
-            nodeList[i].style.borderColor = "#f19224";
+        const button = nodeList[i];
+
+        button.addEventListener("mouseover", () => {
+            button.style.borderColor = "#f19224";
         });
 
-        nodeList[i].addEventListener("mouseleave", () => {
-            nodeList[i].style.borderColor = "#acacac";
+        button.addEventListener("mouseleave", () => {
+            button.style.borderColor = "white";
         });
 
-        nodeList[i].addEventListener("click", () => {
-            nodeList[i].firstChild.style.color = "#f19224";
+        button.addEventListener("click", () => {
+            button.firstChild.style.color = "#f19224";
         });
 
-        nodeList[i].addEventListener("mouseup", () => {
-            nodeList[i].firstChild.style.color = "#acacac";
+        button.addEventListener("mouseup", () => {
+            button.firstChild.style.color = "white";
         });
+
     }
 
+    // p elements inherently have a pre-defined margin and without it being specifically set it caused problems with align-items: center of its grandparent.
     nodeList = document.querySelectorAll("p.Arial25");
     for (let i = 0; i < nodeList.length; i++) {
         nodeList[i].style =
         `font-family: Arial, Helvetica, sans-serif;
+        margin: 0px;
         font-size: 25px;
         color: white;`;
     }
@@ -326,6 +336,7 @@ function drawOpenposeEditor() {
     for (let i = 0; i < nodeList.length; i++) {
         nodeList[i].style =
         `font-family: Arial, Helvetica, sans-serif;
+        margin: 0px;
         font-size: 15px;
         color: white;`;
     }
@@ -379,15 +390,15 @@ function drawOpenposeEditor() {
     node.style.alignItems = "center";
 
     node = document.getElementById("cont_button_section");
-    node.style =
-    `display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;`;
+    node.style.display = "flex";
+    node.style.flexDirection = "row";
+    node.style.justifyContent = "center";
+    node.style.alignItems = "center";
 
     node = document.getElementById("previous_button");
     node.addEventListener("click", () => {
         if (index == 0) {
+            console.log("User requested the previous image but this is the first.");
             return;
         }
         setIntermissionMessage("Receiving previous image...");
@@ -438,7 +449,7 @@ function drawOpenposeEditor() {
     });
 
     node = document.getElementById("figure_add_remove_buttons");
-    node.style.margin = "0px 10px";
+    node.style.margin = "10px 10px";
     node.style.display = "flex";
     node.style.flexDirection = "row";
     node.style.justifyContent = "center";
@@ -449,8 +460,9 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("remove_figure_button");
     node.addEventListener("click", removeFigure);
+
 }
-// [NOTE] Switch überschreibt style und hinterlässt diesen ohne die Größen
+
 function switchToOpenposeEditor() {
     const oldChild = document.getElementById("container_intermission");
     const newChild = document.getElementById("container_openpose");
@@ -927,10 +939,3 @@ function decrementIndex() {
     index--;
     document.getElementById("image_counter").innerText = `This is image ${index+1} out of ${total}.`;
 }
-
-/**
- *      >Problems to learn from.
- * When creating HTML elements and setting their style via JS it becomes important to pay attention to when something
- * is set in terms of parent-children relation. If the child has a property that relates to the parent (e.g. percentage based sizes)
- * then the parent needs to be set first.
- */
