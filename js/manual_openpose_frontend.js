@@ -589,7 +589,7 @@ function displayFigureData() {
 
             let p00 = document.createElement("p");
             p00.className = "Entry_Text";
-            p00.innerText = "Figure " + i;
+            p00.innerText = "Figure " + i + 1;
             div00.appendChild(p00);
 
             let p01 = document.createElement("p");
@@ -682,7 +682,7 @@ function displayLatestFigureData() {
 
         let p00 = document.createElement("p");
         p00.className = "Entry_Text";
-        p00.innerText = "Figure " + latestIndex;
+        p00.innerText = "Figure " + latestIndex + 1;
         div00.appendChild(p00);
 
         let p01 = document.createElement("p");
