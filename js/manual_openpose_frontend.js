@@ -282,12 +282,16 @@ function drawOpenposeEditor() {
             button.style.borderColor = "white";
         });
 
-        button.addEventListener("click", () => {
-            button.style.color = "#f19224";
+        button.addEventListener("pointerdown", () => {
+            button.firstChild.style.color = "#f19224";
         });
 
-        button.addEventListener("mouseup", () => {
-            button.style.color = "white";
+        button.addEventListener("pointercancel", () => {
+            button.firstChild.style.color = "white";
+        });
+
+        button.addEventListener("pointerup", () => {
+            button.firstChild.style.color = "white";
         });
 
     }
@@ -312,11 +316,16 @@ function drawOpenposeEditor() {
             button.style.borderColor = "white";
         });
 
-        button.addEventListener("click", () => {
+        // mousedown and mouseup is not as robust as their pointer variants.
+        button.addEventListener("pointerdown", () => {
             button.firstChild.style.color = "#f19224";
         });
 
-        button.addEventListener("mouseup", () => {
+        button.addEventListener("pointercancel", () => {
+            button.firstChild.style.color = "white";
+        });
+
+        button.addEventListener("pointerup", () => {
             button.firstChild.style.color = "white";
         });
 
@@ -432,6 +441,7 @@ function drawOpenposeEditor() {
     node = document.getElementById("next_button");
     node.addEventListener("click", () => {
         if (index == total-1) {
+            console.log("User requested the next image but this is the last.");
             return;
         }
         setIntermissionMessage("Receiving next image...");
@@ -488,14 +498,17 @@ function addFigure() {
  * Either remove the last element or replace the only remaining element with empty figure data.
  */
 function removeFigure() {
-    index = pair.figures.length-1;
-    children = document.querySelectorAll(`div[id^="figure_${index}"]`);
+
+    let index = pair.figures.length-1;
+    const children = document.querySelectorAll(`div[id^="figure_${index}"]`);
 
     if (pair.figures.length == 1) {
+
         const emptyFigure = Object.assign({}, openpose_keypoints);
         pair.figures[0] = emptyFigure;
 
         for (let child of children) {
+            console.log(child);
             child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
@@ -506,9 +519,11 @@ function removeFigure() {
         renderFigure();
 
     } else {
+
         pair.figures.pop();
         
         for (let child of children) {
+            console.log(child);
             child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
