@@ -314,7 +314,7 @@ class ManualOpenposeNode:
         return (ref_imgs, op_imgs)
     
 '''
-Some things to know:
+Notes:
 If the input is forced to be a list then the tensor that is an input is turned into a list of squeezed tensors ([B,H,W,C] -> [H,W,C]).
 If the input is a list of images and the next node does not receive the input as a list (INPUT_IS_LIST = False) it will receive the images individually and sequentially instead of the whole list at once.
 If the input is a batch of images then the next node will receive the whole batch which is a tensor of the shape [B,H,W,C] at once. The node expects the individual members of the batch to be of uniform size.
