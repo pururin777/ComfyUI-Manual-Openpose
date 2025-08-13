@@ -36,7 +36,7 @@ api.addEventListener("send-next-image", (event) => {
     displayFigureData();
 })
 
-api.addEventListener("terminate-frontend", () => {
+api.addEventListener("terminate-frontend", (event) => {
     document.getElementById("app_window").remove();
     document.getElementById("container_openpose").remove();
     document.getElementById("container_intermission").remove();
@@ -426,14 +426,23 @@ function drawOpenposeEditor() {
 
     node = document.getElementById("send_all_button");
     node.addEventListener("click", () => {
+        // Ask the user for confirmation, because maybe they pressed on this button by accident.
+        let check = confirm("Are you sure that you've gone through every image and have set all the figures that you wanted to?");
+        if (!check) {
+            return;
+        }
+
         setIntermissionMessage("Generating Openpose images in backend...");
         switchToIntermission();
+
+        const figuresListStr = convertAllJSObjToStr();
+
         fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 signal: 0,
-                figures: pair.figures
+                figures: figuresListStr
             })
         });
     });
@@ -508,7 +517,6 @@ function removeFigure() {
         pair.figures[0] = emptyFigure;
 
         for (let child of children) {
-            console.log(child);
             child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
@@ -523,7 +531,6 @@ function removeFigure() {
         pair.figures.pop();
         
         for (let child of children) {
-            console.log(child);
             child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
@@ -589,7 +596,7 @@ function displayFigureData() {
 
             let p00 = document.createElement("p");
             p00.className = "Entry_Text";
-            p00.innerText = "Figure " + i + 1;
+            p00.innerText = "Figure " + i;
             div00.appendChild(p00);
 
             let p01 = document.createElement("p");
@@ -682,7 +689,7 @@ function displayLatestFigureData() {
 
         let p00 = document.createElement("p");
         p00.className = "Entry_Text";
-        p00.innerText = "Figure " + latestIndex + 1;
+        p00.innerText = "Figure " + latestIndex;
         div00.appendChild(p00);
 
         let p01 = document.createElement("p");
@@ -953,4 +960,18 @@ function incrementIndex() {
 function decrementIndex() {
     index--;
     document.getElementById("image_counter").innerText = `This is image ${index+1} out of ${total}.`;
+}
+
+/**
+ * Function to convert all the listed figures that are JS objects into JSON formatted strings.
+ */
+function convertAllJSObjToStr() {
+    const figuresList = [];
+
+    for (let figure of pair.figures) {
+        let figureStr = JSON.stringify(figure);
+        figuresList.push(figureStr);
+    }
+
+    return figuresList;
 }
