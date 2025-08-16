@@ -294,9 +294,7 @@ class ManualOpenposeNode:
             user_continue_event.clear()
             user_continue_event.wait()
 
-            if signal == 1:
-                current_index += signal
-            elif signal == -1:
+            if signal != 0:
                 current_index += signal
 
         truples = ManualOpenposeNode.convertAllJSONToDict(truples)
@@ -315,7 +313,7 @@ class ManualOpenposeNode:
     
 '''
 Notes:
-If the input is forced to be a list then the tensor that is an input is turned into a list of squeezed tensors ([B,H,W,C] -> [H,W,C]).
-If the input is a list of images and the next node does not receive the input as a list (INPUT_IS_LIST = False) it will receive the images individually and sequentially instead of the whole list at once.
-If the input is a batch of images then the next node will receive the whole batch which is a tensor of the shape [B,H,W,C] at once. The node expects the individual members of the batch to be of uniform size.
+If the batch input is forced to be a list then the tensor that is an input is turned into a list of squeezed tensors ([B,H,W,C] -> [H,W,C]).
+A batch as a multiple will be received all at once by the next node and a list as a multiple will have its elements received individually and sequantially.
+INPUT_IS_LIST or forceInputAsList simply transforms a batch into a list and makes the input available as a list parameter.
 '''

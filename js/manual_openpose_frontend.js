@@ -31,8 +31,9 @@ api.addEventListener("send-next-image", (event) => {
     const url = URL.createObjectURL(blob);
 
     updatePair(blob, figuresList);
-    switchToOpenposeEditor();
+    removeEntries();
     insertImage(url);
+    switchToOpenposeEditor();
     displayFigureData();
 })
 
@@ -404,20 +405,25 @@ function drawOpenposeEditor() {
     node.style.justifyContent = "center";
     node.style.alignItems = "center";
 
+    // We are sending back a JSON string representing a list of former JS objects.
     node = document.getElementById("previous_button");
     node.addEventListener("click", () => {
         if (index == 0) {
             console.log("User requested the previous image but this is the first.");
             return;
         }
+
         setIntermissionMessage("Receiving previous image...");
         switchToIntermission();
+
+        const figuresListStr = convertAllJSObjToStr();
+
         fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 signal: -1,
-                figures: pair.figures
+                figures: figuresListStr
             })
         }).then(() => {
             decrementIndex();
@@ -453,14 +459,18 @@ function drawOpenposeEditor() {
             console.log("User requested the next image but this is the last.");
             return;
         }
+
         setIntermissionMessage("Receiving next image...");
         switchToIntermission();
+
+        const figuresListStr = convertAllJSObjToStr();
+
         fetch("/free-send-next-image", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 signal: 1,
-                figures: pair.figures
+                figures: figuresListStr
             })
         }).then(() => {
             incrementIndex();
@@ -516,7 +526,9 @@ function removeFigure() {
         const emptyFigure = Object.assign({}, openpose_keypoints);
         pair.figures[0] = emptyFigure;
 
-        for (let child of children) {
+        for (const child of children) {
+            child.removeEventListener("mouseover", highlightEntry);
+            child.removeEventListener("mouseleave", dimEntry);
             child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
@@ -530,7 +542,9 @@ function removeFigure() {
 
         pair.figures.pop();
         
-        for (let child of children) {
+        for (const child of children) {
+            child.removeEventListener("mouseover", highlightEntry);
+            child.removeEventListener("mouseleave", dimEntry);
             child.removeEventListener("click", updateEntrySelection);
             child.remove();
         }
@@ -648,18 +662,10 @@ function displayFigureData() {
                 resetCursor();
             }
 
-            div00.addEventListener("mouseover", () => {
-                div00.style.borderColor = "#f19224";
-            });
+            div00.addEventListener("mouseover", highlightEntry);
 
             // If an entry is already active then "mouseleave" shouldn't turn it dim again.
-            div00.addEventListener("mouseleave", () => {
-                if (div00.id == "figure_" + cursor.figure + "_" + cursor.key + "_entry") {
-                    return;
-                }
-
-                div00.style.borderColor = "#acacac";
-            });
+            div00.addEventListener("mouseleave", dimEntry);
 
             // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
             div00.addEventListener("click", updateEntrySelection);
@@ -731,17 +737,9 @@ function displayLatestFigureData() {
         color: white;
         margin: 5px 15px 5px 10px;`;
 
-        div00.addEventListener("mouseover", () => {
-            div00.style.borderColor = "#f19224"
-        });
+        div00.addEventListener("mouseover", highlightEntry);
 
-        div00.addEventListener("mouseleave", () => {
-            if (div00.id == "figure_" + cursor.figure + "_" + cursor.key + "_entry") {
-                return;
-            }
-
-            div00.style.borderColor = "#acacac"
-        });
+        div00.addEventListener("mouseleave", dimEntry);
 
         // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
         div00.addEventListener("click", updateEntrySelection);
@@ -751,17 +749,37 @@ function displayLatestFigureData() {
 }
 
 /**
+ * Function to empty the list of entries.
+ */
+function removeEntries() {
+    const parent = document.getElementById("settings_section");
+    const last = document.getElementById("figure_add_remove_buttons");
+
+    // For the iterable to be parent.children is problematic because it would dynamically change per iteration in which elements are deleten.
+    // With Array.from() a static snapshot is made that references the original elements that will be deleten while itself remaining the same.
+    // const only acts block-wise. Each iteration will create a new const variable of the stated name.
+    for (const child of Array.from(parent.children)) {
+        if (child != last) {
+            child.removeEventListener("mouseover", highlightEntry);
+            child.removeEventListener("mouseleave", dimEntry);
+            child.removeEventListener("click", updateEntrySelection);
+            child.remove();
+        }
+    }
+}
+
+/**
  * Function for the EventListener when someone clicks on an entry.
  */
 function updateEntrySelection() {
     const entry_frames = document.getElementsByClassName("Landmarks_Entry");
     const paragraphs = document.getElementsByClassName("Entry_Text");
 
-    for (let entry_frame of entry_frames) {
+    for (const entry_frame of entry_frames) {
         entry_frame.style.borderColor = "#acacac";
     }
 
-    for (let paragraph of paragraphs) {
+    for (const paragraph of paragraphs) {
         paragraph.style.color = "white";
     }
     // Make the current entry highlit and place the cursor on it.
@@ -786,6 +804,18 @@ function updateEntrySelection() {
     // The entry that has been selected should also be reset.
     pair.figures[figureIndex][landmark] = [0,0,0];
     renderFigure();
+}
+
+function highlightEntry() {
+    this.style.borderColor = "#f19224";
+}
+
+function dimEntry() {
+    if (this.id == "figure_" + cursor.figure + "_" + cursor.key + "_entry") {
+        return;
+    }
+
+    this.style.borderColor = "#acacac";
 }
 
 /**
@@ -901,11 +931,11 @@ function incrementCursor(entry) {
     const entry_frames = document.getElementsByClassName("Landmarks_Entry");
     const paragraphs = document.getElementsByClassName("Entry_Text");
 
-    for (let entry_frame of entry_frames) {
+    for (const entry_frame of entry_frames) {
         entry_frame.style.borderColor = "#acacac";
     }
 
-    for (let paragraph of paragraphs) {
+    for (const paragraph of paragraphs) {
         paragraph.style.color = "white";
     }
 
@@ -968,7 +998,7 @@ function decrementIndex() {
 function convertAllJSObjToStr() {
     const figuresList = [];
 
-    for (let figure of pair.figures) {
+    for (const figure of pair.figures) {
         let figureStr = JSON.stringify(figure);
         figuresList.push(figureStr);
     }
