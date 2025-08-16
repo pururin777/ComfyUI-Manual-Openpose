@@ -31,8 +31,8 @@ api.addEventListener("send-next-image", (event) => {
     const url = URL.createObjectURL(blob);
 
     updatePair(blob, figuresList);
-    removeEntries();
     insertImage(url);
+    removeEntries();
     switchToOpenposeEditor();
     displayFigureData();
 })
@@ -118,6 +118,7 @@ function drawIntermission() {
 function switchToIntermission() {
     const oldChild = document.getElementById("container_openpose");
     const newChild = document.getElementById("container_intermission");
+ 
     oldChild.style.display = "none";
     newChild.style.display = "flex";
 }
@@ -535,8 +536,6 @@ function removeFigure() {
 
         // We are not only removing a figure in this case but also adding a new, empty figure. Therefore new entries must be made.
         displayFigureData();
-        // renderFigure because rendered canvas must be made empty.
-        renderFigure();
 
     } else {
 
