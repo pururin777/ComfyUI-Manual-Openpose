@@ -33,8 +33,8 @@ api.addEventListener("send-next-image", (event) => {
     updatePair(blob, figuresList);
     insertImage(url);
     removeEntries();
-    switchToOpenposeEditor();
     displayFigureData();
+    switchToOpenposeEditor();
 })
 
 api.addEventListener("terminate-frontend", (event) => {
@@ -119,6 +119,12 @@ function switchToIntermission() {
     const oldChild = document.getElementById("container_openpose");
     const newChild = document.getElementById("container_intermission");
  
+    clearCanvas();
+
+    // Hide the old image too, so it doesn’t flash
+    const imageElement = document.getElementById("img_reference");
+    if (imageElement) imageElement.style.visibility = "hidden";
+
     oldChild.style.display = "none";
     newChild.style.display = "flex";
 }
@@ -512,6 +518,7 @@ function addFigure() {
     pair.figures.push(emptyFigure);
     // Insert landmark entries in the Openpose landmarks list.
     displayLatestFigureData();
+    renderFigure();
 }
 
 /**
@@ -536,6 +543,7 @@ function removeFigure() {
 
         // We are not only removing a figure in this case but also adding a new, empty figure. Therefore new entries must be made.
         displayFigureData();
+        renderFigure();
 
     } else {
 
@@ -670,8 +678,6 @@ function displayFigureData() {
             div00.addEventListener("click", updateEntrySelection);
         }
     }
-
-    renderFigure();
 }
 
 /**
@@ -743,8 +749,6 @@ function displayLatestFigureData() {
         // Clicking on this entry's div lights up its text and changes the cursor to this figure and landmark.
         div00.addEventListener("click", updateEntrySelection);
     }
-
-    renderFigure();
 }
 
 /**
@@ -822,6 +826,36 @@ function dimEntry() {
  */
 function insertImage(url) {
     const imageElement = document.getElementById("img_reference");
+    const canvElement = document.getElementById("openpose_canvas");
+    // Hide and clear overlay to avoid flicker. "hidden" is not the same as "none". We actually still have dimensions to call upon.
+    imageElement.style.visibility = "hidden";
+    canvElement.style.visibility = "hidden;"
+
+    clearCanvas();
+
+    const prevUrl = imageElement.dataset.url || null;
+
+    // Because this is a property and not an addEventListener function we are not adding more EventListeners
+    // when this function is called, it's merely overriden.
+    imageElement.onload = () => {
+        // We will definitely only render when the image is already loaded.
+        renderFigure();
+        canvElement.style.visibility = "visible";
+        imageElement.style.visibility = "visible";
+
+        // Revoke the previous object URL to prevent memory leaks.
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        imageElement.dataset.url = url;
+    };
+
+    // Handle failed loads gracefully.
+    imageElement.onerror = () => {
+        console.error("Failed to load image:", url);
+        setIntermissionMessage("Dealing with error on image loading...");
+        switchToIntermission();
+    };
+
+    // Trigger loading
     imageElement.src = url;
 
     imageElement.removeEventListener("click", trackCoordinates);
@@ -849,6 +883,12 @@ function trackCoordinates(event) {
  */
 function renderFigure() {
     const img_element = document.getElementById("img_reference");
+
+    // In case there there is no loaded image yet and therefore we would deal with a zero-size image.
+    if (!img_element.naturalWidth || !img_element.naturalHeight) {
+        return;
+    }
+
     const canv_element = document.getElementById("openpose_canvas");
     const context = canv_element.getContext("2d");
 
@@ -910,6 +950,18 @@ function renderFigure() {
 
             }
         }
+    }
+}
+
+/**
+ * Function to clear the canvas.
+ */
+function clearCanvas() {
+    const canv = document.getElementById("openpose_canvas");
+
+    if (canv) {
+        const context = canv.getContext("2d");
+        context.clearRect(0, 0, canv_width, canv_height);
     }
 }
 
