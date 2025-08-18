@@ -1,6 +1,5 @@
 from .templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER
 
-from comfy.model_management import InterruptProcessingException
 from server import PromptServer
 from aiohttp import web
 
@@ -20,8 +19,8 @@ truples = []
 signal = -1
 user_continue_event = Event()
 
-EDGE_THICKNESS = 4
-VERTEX_RADIUS = 6
+EDGE_THICKNESS = 8
+VERTEX_RADIUS = 12
 VERTEX_THICKNESS = -1
 MIN_CONFIDENCE = 0.05
 
