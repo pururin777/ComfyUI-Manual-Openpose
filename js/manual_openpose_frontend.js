@@ -38,9 +38,26 @@ api.addEventListener("send-next-image", (event) => {
 })
 
 api.addEventListener("terminate-frontend", (event) => {
+    // "?"" because there is a chance that cancel-process already removed it so we want to avoid throwing an error.
+    document.getElementById("app_window")?.remove();
+})
+
+// Cancel generation process if the window has been closed.
+window.addEventListener("beforeunload", (e) => {
     document.getElementById("app_window").remove();
-    document.getElementById("container_openpose").remove();
-    document.getElementById("container_intermission").remove();
+
+    // Making the beforeunload event robust, because it's likely to be dropped otherwise.
+    if (!navigator.sendBeacon("/cancel-process")) {
+        fetch("/cancel-process", {
+            method: "POST",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                signal: 0,
+                figures: figuresListStr
+            })
+        })
+    }
 })
 
 /**

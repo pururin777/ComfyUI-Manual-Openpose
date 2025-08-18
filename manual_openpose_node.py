@@ -1,5 +1,6 @@
 from .templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER
 
+from comfy.model_management import InterruptProcessingException
 from server import PromptServer
 from aiohttp import web
 
@@ -47,7 +48,24 @@ async def free_send_next_image(request):
     figures = data["figures"]
 
     truples[current_index] = ManualOpenposeNode.updateTruple(truples[current_index], figures)
-        
+
+    current_index += signal
+
+    user_continue_event.set()
+    return web.json_response({"status": "ok"})
+
+@PromptServer.instance.routes.post("/cancel-process")
+async def cancel_process(request):
+    global truples
+    global current_index
+    global signal
+
+    data = await request.json()
+    signal = data["signal"]
+    figures = data["figures"]
+
+    truples[current_index] = ManualOpenposeNode.updateTruple(truples[current_index], figures)
+
     user_continue_event.set()
     return web.json_response({"status": "ok"})
 
@@ -268,6 +286,7 @@ class ManualOpenposeNode:
         global truples
         global current_index
         global signal
+        global cancel
         buffer = io.BytesIO()
         op_imgs = []
 
@@ -293,9 +312,6 @@ class ManualOpenposeNode:
             PromptServer.instance.send_sync("send-next-image", {"image_base64": encoded_img, "sent_figures": truples[current_index][1]})
             user_continue_event.clear()
             user_continue_event.wait()
-
-            if signal != 0:
-                current_index += signal
 
         truples = ManualOpenposeNode.convertAllJSONToDict(truples)
 
