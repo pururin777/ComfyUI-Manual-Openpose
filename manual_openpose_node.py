@@ -20,8 +20,8 @@ truples = []
 signal = -1
 user_continue_event = Event()
 
-EDGE_THICKNESS = 2
-VERTEX_RADIUS = 4
+EDGE_THICKNESS = 4
+VERTEX_RADIUS = 6
 VERTEX_THICKNESS = -1
 MIN_CONFIDENCE = 0.05
 
@@ -161,6 +161,7 @@ class ManualOpenposeNode:
 
     '''
     # Creates and adds a corresponding pair of render data that is stripped of low confidence landmarks and subsequently relations that contain them.
+    # Note: The approach here is unnecessarily extensive. Should have built a list of acceptable entries instead, but both works.
     # @param {int} width - The image's width of this truple.
     # @param {int} height - The image's height of this truple.
     # @param {list} truple - List consisting of image, figure data and as of yet empty render data.
@@ -176,15 +177,17 @@ class ManualOpenposeNode:
             figure = truple[1][i]
 
             for landmark in figure:
+
                 # If the landmark is outside of the image or has too low confidence then remove it from the render order.
                 if figure[landmark][0] >= width or figure[landmark][1] >= height or figure[landmark][2] < MIN_CONFIDENCE:
+
                     # Record the index of all invalid entries.
                     for j in range(0, len(truple[2][i])):
                         if landmark in truple[2][i][j]:
                             toRemove.append(j)
-            
-            # Sort the indexes in descending order to pop them without shifting the index of the other invalid entires.
-            toRemove = sorted(toRemove, reverse=True)
+
+            # Sort the indeces in descending order to pop them without shifting the index of the other invalid entries.
+            toRemove = sorted(set(toRemove), reverse=True)
             for index in toRemove:
                 truple[2][i].pop(index)
             toRemove = []
@@ -244,7 +247,6 @@ class ManualOpenposeNode:
     def convertAllJSONToDict(truples):
         for truple in truples:
             for i in range(len(truple[1])):
-                print("Data of figure 0 prior to being converted to dict: " + truple[1][i])
                 truple[1][i] = ManualOpenposeNode.convertToDict(truple[1][i])
         return truples
 
