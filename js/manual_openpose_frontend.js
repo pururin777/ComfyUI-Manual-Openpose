@@ -960,6 +960,22 @@ function renderFigure() {
 
                 let [red, green, blue] = keypoint_colors.get(element);
 
+                if (element == "r_wrist") {
+                    for (const landmark of r_hand_landmarks) {
+                        if (figure[landmark][2] >= MIN_CONFIDENCE) {
+                            [red, green, blue] = [0, 0, 255];
+                            break;
+                        }
+                    }
+                } else if (element == "l_wrist") {
+                    for (const landmark of l_hand_landmarks) {
+                        if (figure[landmark][2] >= MIN_CONFIDENCE) {
+                            [red, green, blue] = [0, 0, 255];
+                            break;
+                        }
+                    }
+                }
+
                 context.beginPath();
                 context.arc(figure[element][0] * x_scale, figure[element][1] * y_scale, KEYPOINT_RADIUS, 0, 2 * Math.PI);
                 context.fillStyle = `rgb(${red}, ${green}, ${blue})`;
