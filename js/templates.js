@@ -357,3 +357,49 @@ export const relation_colors = new Map([
     ["l_pinky_proximal-l_pinky_middle", [255,0,153]],
     ["l_pinky_middle-l_pinky_distal", [255,0,77]]
 ]);
+
+export const r_hand_landmarks = [
+    "r_thumb_trapezium",
+    "r_thumb_metacarpal",
+    "r_thumb_proximal",
+    "r_thumb_distal",
+    "r_index_metacarpal",
+    "r_index_proximal",
+    "r_index_middle",
+    "r_index_distal",
+    "r_middle_metacarpal",
+    "r_middle_proximal",
+    "r_middle_middle",
+    "r_middle_distal",
+    "r_ring_metacarpal",
+    "r_ring_proximal",
+    "r_ring_middle",
+    "r_ring_distal",
+    "r_pinky_metacarpal",
+    "r_pinky_proximal",
+    "r_pinky_middle",
+    "r_pinky_distal"
+]
+
+export const l_hand_landmarks = [
+    "l_thumb_trapezium",
+    "l_thumb_metacarpal",
+    "l_thumb_proximal",
+    "l_thumb_distal",
+    "l_index_metacarpal",
+    "l_index_proximal",
+    "l_index_middle",
+    "l_index_distal",
+    "l_middle_metacarpal",
+    "l_middle_proximal",
+    "l_middle_middle",
+    "l_middle_distal",
+    "l_ring_metacarpal",
+    "l_ring_proximal",
+    "l_ring_middle",
+    "l_ring_distal",
+    "l_pinky_metacarpal",
+    "l_pinky_proximal",
+    "l_pinky_middle",
+    "l_pinky_distal"
+]

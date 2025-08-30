@@ -1,4 +1,4 @@
-from .templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER
+from .templates import OPENPOSE_KEYPOINTS, KEYPOINT_COLORS, OPENPOSE_RELATIONS, RELATION_COLORS, RENDER_ORDER, R_HAND_LANDMARKS, L_HAND_LANDMARKS
 
 from server import PromptServer
 from aiohttp import web
@@ -154,9 +154,24 @@ class ManualOpenposeNode:
     # @param {string} landmark - String that references a specific openpose figure landmark.
     '''
     @staticmethod
-    def renderKeypoint(op_img, figure, landmark):
+    def renderKeypoint(op_img, figure, landmark, render_order):
         x, y = figure[landmark][0], figure[landmark][1]
-        cv2.circle(op_img, (x, y), VERTEX_RADIUS, KEYPOINT_COLORS[landmark], VERTEX_THICKNESS)
+
+        # If hand landmarks (other than the wrist) have been set, then make the wrist landmark blue to signify to ControlNet that hands are there.
+        if landmark == "r_wrist":
+            if bool(set(R_HAND_LANDMARKS) & set(render_order)):
+                cv2.circle(op_img, (x, y), VERTEX_RADIUS, [0,0,255], VERTEX_THICKNESS)
+            else:
+                cv2.circle(op_img, (x, y), VERTEX_RADIUS, KEYPOINT_COLORS[landmark], VERTEX_THICKNESS)
+
+        elif landmark == "l_wrist":
+            if bool(set(L_HAND_LANDMARKS) & set(render_order)):
+                cv2.circle(op_img, (x, y), VERTEX_RADIUS, [0,0,255], VERTEX_THICKNESS)
+            else:
+                cv2.circle(op_img, (x, y), VERTEX_RADIUS, KEYPOINT_COLORS[landmark], VERTEX_THICKNESS)
+        
+        else:
+            cv2.circle(op_img, (x, y), VERTEX_RADIUS, KEYPOINT_COLORS[landmark], VERTEX_THICKNESS)
 
     '''
     # Creates and adds a corresponding pair of render data that is stripped of low confidence landmarks and subsequently relations that contain them.
@@ -210,7 +225,7 @@ class ManualOpenposeNode:
                 if "-" in element:
                     ManualOpenposeNode.renderRelation(op_img, figure, element)
                 else:
-                    ManualOpenposeNode.renderKeypoint(op_img, figure, element)
+                    ManualOpenposeNode.renderKeypoint(op_img, figure, element, truple[2][i])
         
         return op_img
 

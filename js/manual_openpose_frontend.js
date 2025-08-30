@@ -1,4 +1,4 @@
-import { openpose_keypoints, openpose_relations, render_order, keypoint_colors, relation_colors } from "./templates.js"; // "./" must be added to signify relative path.
+import { openpose_keypoints, openpose_relations, render_order, keypoint_colors, relation_colors, r_hand_landmarks, l_hand_landmarks } from "./templates.js"; // "./" must be added to signify relative path.
 
 import { api } from "../../scripts/api.js"
 
