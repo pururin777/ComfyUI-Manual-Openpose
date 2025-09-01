@@ -721,12 +721,12 @@ function displayLatestFigureData() {
         div00.appendChild(p00);
 
         let p01 = document.createElement("p");
-        p00.className = "Entry_Text";
+        p01.className = "Entry_Text";
         p01.innerText = keys[i];
         div00.appendChild(p01);
 
         let p02 = document.createElement("p");
-        p00.className = "Entry_Text";
+        p02.className = "Entry_Text";
         p02.id = `figure_${latestIndex}_${keys[i]}_vector`;
         p02.innerText = "(" + values[i].toString() + ")";
         div00.appendChild(p02);
